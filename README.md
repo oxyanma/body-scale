@@ -8,6 +8,7 @@
   <img src="https://img.shields.io/badge/python-3.10%2B-yellow" alt="Python 3.10+" />
   <img src="https://img.shields.io/badge/100%25-offline-brightgreen" alt="100% Offline" />
   <img src="https://img.shields.io/badge/no%20ads-no%20paywall-orange" alt="No Ads" />
+  <img src="https://img.shields.io/badge/lang-PT%20|%20EN%20|%20ES%20|%20FR-blueviolet" alt="4 Languages" />
 </p>
 
 ---
@@ -33,10 +34,29 @@ The **[OKOK·International](https://play.google.com/store/apps/details?id=com.ch
 
 - **No ads, no login, no paywall** — all features unlocked from day one
 - **100% offline** — your data never leaves your computer
+- **4 languages** — Portuguese, English, Spanish, and French built-in
 - **Accurate BIA calculations** — formulas derived from reverse-engineering the OKOK CsAlgoBuilder plus validated scientific references (Janssen 2000, Mifflin-St Jeor, Kyle 2004, EWGSOP2)
 - **20+ body composition metrics** — more than the OKOK·International app offers, even in its paid version
+- **Multi-profile** — support for multiple family members on the same device
 - **Cross-platform** — runs on macOS, Windows, and Linux
 - **Open source** — audit the code, contribute, or fork it
+
+## OKOK·International vs BioScale
+
+| Feature | OKOK·International | BioScale |
+|---------|-------------------|----------|
+| Price | Free (with paid features) | **100% Free** |
+| Ads | Yes (forced video ads) | **None** |
+| Login required | Yes | **No** |
+| Offline | Partial (cloud sync) | **100% Offline** |
+| Languages | Limited | **4 (PT, EN, ES, FR)** |
+| Metrics | ~12 (some locked) | **20+ (all unlocked)** |
+| Multi-profile | Limited | **Unlimited family members** |
+| Data privacy | Cloud sync | **Local only (SQLite)** |
+| Data export | No | **CSV + SQLite backup** |
+| Open source | No | **Yes (MIT)** |
+| Platforms | iOS, Android | **macOS, Windows, Linux** |
+| BIA accuracy | Questionable | **Validated scientific formulas** |
 
 ## Features
 
@@ -54,15 +74,26 @@ The **[OKOK·International](https://play.google.com/store/apps/details?id=com.ch
 - **Tier 2 (optional):** Waist-to-Hip Ratio (WHR), Waist-to-Height Ratio (WHtR), Cardiovascular Risk Score
 
 ### History & Comparison
-- Full measurement history with timeline
+- Full measurement history with timeline and weight chart
 - Side-by-side comparison between any two measurements
-- Track your progress over time
+- Track your progress over time with trend indicators
+
+### Multi-Profile
+- Create profiles for each family member
+- Independent data per profile (name, age, sex, height, activity level)
+- Optional waist/hip measurements for cardiovascular risk assessment
 
 ### Data Management
 - Export data as CSV
 - SQLite database backup
 - Clear history
 - Full data deletion (privacy-first)
+
+### Multilingual (i18n)
+- 🇧🇷 Português
+- 🇺🇸 English
+- 🇪🇸 Español
+- 🇫🇷 Français
 
 ### BLE Scale Communication
 - Native BLE (Bluetooth Low Energy) connection via `bleak`
@@ -75,7 +106,7 @@ The **[OKOK·International](https://play.google.com/store/apps/details?id=com.ch
 BioScale works with smart scales using the **Chipsea chipset**, which is common in many affordable BLE body composition scales sold under brands like:
 
 - Scales that use the OKOK·International app
-- Generic Bluetooth body fat scales (AliExpress, Amazon, Shopee)
+- Generic Bluetooth body fat scales (AliExpress, Amazon, Shopee, Mercado Livre)
 - Any scale advertising compatibility with "OKOK", "OKOK·International", or "Chipsea"
 
 ## Installation
@@ -152,6 +183,7 @@ python main.py --debug
 | BLE | bleak |
 | Database | SQLite via SQLAlchemy |
 | Data | Pandas, NumPy |
+| i18n | Custom (PT, EN, ES, FR) |
 
 ## Scientific References
 
@@ -162,20 +194,6 @@ python main.py --debug
 - **Sarcopenia Risk** — EWGSOP2 thresholds (Cruz-Jentoft 2019)
 - **Body Water** — Pace & Rathbun 1945 (73% of FFM)
 - **Cardiovascular Risk** — AHA risk factor guidelines, Ashwell 2012 (WHtR)
-
-## OKOK·International vs BioScale
-
-| Feature | OKOK·International | BioScale |
-|---------|-------------------|----------|
-| Price | Free (with paid features) | 100% Free |
-| Ads | Yes (forced video ads) | None |
-| Login required | Yes | No |
-| Offline | Partial | 100% Offline |
-| Metrics | ~12 (some locked) | 20+ (all unlocked) |
-| Data privacy | Cloud sync | Local only (SQLite) |
-| Open source | No | Yes (MIT) |
-| Platforms | iOS, Android | macOS, Windows, Linux |
-| BIA accuracy | Questionable | Validated formulas |
 
 ## Data Storage
 
@@ -191,4 +209,24 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-**Keywords:** OKOK alternative, OKOK International replacement, OKOK International free alternative, free body composition app, open source smart scale, BLE body fat scale, Chipsea scale app, bioimpedance analyzer, body composition calculator, OKOK without ads, OKOK free alternative, smart scale open source, body fat percentage calculator, BIA calculator, OKOK app alternative, okok international open source
+## 🇧🇷 Português
+
+**BioScale** é uma alternativa gratuita e open-source ao app OKOK·International para balanças inteligentes Bluetooth (chipset Chipsea). Sem anúncios, sem login, sem paywall, 100% offline. Mais de 20 métricas de composição corporal com cálculos de bioimpedância validados cientificamente. Suporte a múltiplos perfis familiares e 4 idiomas. Funciona em macOS, Windows e Linux.
+
+**Palavras-chave:** alternativa OKOK, substituir app OKOK, balança bluetooth sem anúncios, composição corporal grátis, bioimpedância open source, app balança inteligente grátis, OKOK International alternativa, balança Chipsea app, gordura corporal calculadora, IMC massa muscular gordura visceral
+
+## 🇪🇸 Español
+
+**BioScale** es una alternativa gratuita y open-source a la app OKOK·International para básculas inteligentes Bluetooth (chipset Chipsea). Sin anuncios, sin login, sin paywall, 100% offline. Más de 20 métricas de composición corporal con cálculos de bioimpedancia validados científicamente. Soporte para múltiples perfiles familiares y 4 idiomas. Compatible con macOS, Windows y Linux.
+
+**Palabras clave:** alternativa OKOK, reemplazo app OKOK, báscula bluetooth sin anuncios, composición corporal gratis, bioimpedancia open source, app báscula inteligente gratis, OKOK International alternativa, báscula Chipsea app, grasa corporal calculadora, IMC masa muscular grasa visceral
+
+## 🇫🇷 Français
+
+**BioScale** est une alternative gratuite et open-source à l'app OKOK·International pour balances intelligentes Bluetooth (chipset Chipsea). Sans publicités, sans login, sans paywall, 100% hors ligne. Plus de 20 métriques de composition corporelle avec des calculs de bio-impédance validés scientifiquement. Support multi-profils familiaux et 4 langues. Compatible macOS, Windows et Linux.
+
+**Mots-clés:** alternative OKOK, remplacer app OKOK, balance bluetooth sans pub, composition corporelle gratuit, bio-impédance open source, app balance intelligente gratuit, OKOK International alternative, balance Chipsea app, graisse corporelle calculateur, IMC masse musculaire graisse viscérale
+
+---
+
+**Keywords:** OKOK alternative, OKOK International replacement, OKOK International free alternative, free body composition app, open source smart scale, BLE body fat scale, Chipsea scale app, bioimpedance analyzer, body composition calculator, OKOK without ads, OKOK free alternative, smart scale open source, body fat percentage calculator, BIA calculator, OKOK app alternative, okok international open source, alternativa OKOK, balança bluetooth, báscula inteligente, balance connectée, composição corporal, composición corporal, composition corporelle
