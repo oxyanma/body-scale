@@ -15,13 +15,14 @@
 ## Screenshots
 
 <p align="center">
-  <img src="screenshots/01_dashboard.png" width="250" alt="Dashboard" />
-  <img src="screenshots/02_composition.png" width="250" alt="Body Composition" />
-  <img src="screenshots/03_history.png" width="250" alt="History" />
+  <img src="screenshots/01_dashboard.png" width="200" alt="Dashboard" />
+  <img src="screenshots/03_history.png" width="200" alt="History" />
+  <img src="screenshots/05_comparison.png" width="200" alt="Comparison" />
 </p>
 <p align="center">
-  <img src="screenshots/04_comparison.png" width="250" alt="Comparison" />
-  <img src="screenshots/05_settings.png" width="250" alt="Settings" />
+  <img src="screenshots/02_profile.png" width="200" alt="Profile" />
+  <img src="screenshots/04_history_compare.png" width="200" alt="Select & Compare" />
+  <img src="screenshots/06_settings.png" width="200" alt="Settings" />
 </p>
 
 ---
