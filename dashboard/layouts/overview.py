@@ -10,10 +10,11 @@ from database.models import User, Measurement, Goal
 from dashboard.state import app_state
 from dashboard.ble_worker import start_ble_measurement_thread
 from datetime import datetime
+from i18n import t
 
 
-MONTHS_PT = {1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho",
-             7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"}
+def _month_name(n):
+    return t(f"month.{n}")
 
 
 def _bmi_position(bmi):
@@ -23,17 +24,17 @@ def _bmi_position(bmi):
 
 
 def _bmi_status(bmi):
-    if not bmi or bmi < 18.5: return "Abaixo do peso", "low"
-    if bmi < 25: return "Normal", "normal"
-    if bmi < 30: return "Sobrepeso", "high"
-    return "Obeso", "obese"
+    if not bmi or bmi < 18.5: return t("bmi.underweight"), "low"
+    if bmi < 25: return t("bmi.normal"), "normal"
+    if bmi < 30: return t("bmi.overweight"), "high"
+    return t("bmi.obese"), "obese"
 
 
 def _greeting():
     hour = datetime.now().hour
-    if hour < 12: return "Bom dia"
-    if hour < 18: return "Boa tarde"
-    return "Boa noite"
+    if hour < 12: return t("overview.greeting_morning")
+    if hour < 18: return t("overview.greeting_afternoon")
+    return t("overview.greeting_evening")
 
 
 def _format_date_pt(dt):
@@ -50,16 +51,16 @@ def _build_goal_stats(target, diff, is_custom_goal, has_data, last):
         # Need to lose weight
         start_offset = abs(diff) + target  # rough estimate of starting point
         progress = max(0, min(100, (1 - abs(diff) / max(start_offset - target, 1)) * 100))
-        status_text = f"Faltam {abs(diff):.2f} kg"
+        status_text = t("overview.goal_remain").format(diff=f"{abs(diff):.2f}")
         status_color = "var(--red)"
         bar_color = "linear-gradient(90deg, #FF6B6B, #EE5A24)"
     elif diff < 0:
-        status_text = f"Faltam {abs(diff):.2f} kg para ganhar"
+        status_text = t("overview.goal_gain").format(diff=f"{abs(diff):.2f}")
         status_color = "var(--blue)"
         bar_color = "linear-gradient(90deg, #4A90D9, #6C5CE7)"
         progress = max(0, min(100, 50))
     else:
-        status_text = "No alvo!"
+        status_text = t("overview.goal_reached")
         status_color = "var(--green)"
         bar_color = "linear-gradient(90deg, #00B894, #55E6C1)"
         progress = 100
@@ -73,7 +74,7 @@ def _build_goal_stats(target, diff, is_custom_goal, has_data, last):
             html.Div([
                 html.Div(f"{current_w:.2f}" if current_w else "--", style={
                     "fontFamily": "'Nunito'", "fontSize": "1.6rem", "fontWeight": "800", "color": "var(--text-primary)", "lineHeight": "1"}),
-                html.Div("ATUAL", style={"fontSize": "0.6rem", "fontWeight": "700", "color": "var(--text-label)",
+                html.Div(t("overview.goal_current"), style={"fontSize": "0.6rem", "fontWeight": "700", "color": "var(--text-label)",
                                           "letterSpacing": "0.08em", "marginTop": "2px"}),
             ], style={"textAlign": "center"}),
 
@@ -83,7 +84,7 @@ def _build_goal_stats(target, diff, is_custom_goal, has_data, last):
             html.Div([
                 html.Div(f"{target:.2f}", style={
                     "fontFamily": "'Nunito'", "fontSize": "1.6rem", "fontWeight": "800", "color": "var(--blue)", "lineHeight": "1"}),
-                html.Div("META", style={"fontSize": "0.6rem", "fontWeight": "700", "color": "var(--text-label)",
+                html.Div(t("overview.goal_target"), style={"fontSize": "0.6rem", "fontWeight": "700", "color": "var(--text-label)",
                                          "letterSpacing": "0.08em", "marginTop": "2px"}),
             ], style={"textAlign": "center"}),
         ], style={"display": "flex", "justifyContent": "center", "gap": "24px", "alignItems": "center", "padding": "8px 0 12px"}),
@@ -107,7 +108,7 @@ def _build_goal_stats(target, diff, is_custom_goal, has_data, last):
 
         # Subtitle
         html.Div(
-            "Peso ideal (IMC 22)" if not is_custom_goal else "Meta personalizada",
+            t("overview.goal_ideal") if not is_custom_goal else t("overview.goal_custom"),
             style={"textAlign": "center", "fontSize": "0.62rem", "color": "var(--text-label)", "marginTop": "4px"}
         ),
     ])
@@ -121,14 +122,14 @@ def create_overview_layout(show_goal_stats=False):
             return html.Div([
                 html.Div([
                     html.Div([
-                        html.Div("BioScale", className="dash-greeting"),
-                        html.Div("Composição Corporal", className="dash-subtitle"),
+                        html.Div(t("overview.app_name"), className="dash-greeting"),
+                        html.Div(t("overview.subtitle"), className="dash-subtitle"),
                     ]),
                 ], className="dash-header"),
                 html.Div([
                     html.Div("👤", style={"fontSize": "3rem", "textAlign": "center", "marginBottom": "8px"}),
-                    html.P("Crie seu perfil para começar", style={"color": "var(--text-secondary)", "textAlign": "center"}),
-                    dcc.Link("Criar Perfil →", href="/perfil",
+                    html.P(t("overview.create_profile_cta"), style={"color": "var(--text-secondary)", "textAlign": "center"}),
+                    dcc.Link(t("overview.create_profile_btn"), href="/perfil",
                              style={"display": "block", "textAlign": "center", "textDecoration": "none",
                                     "padding": "14px", "background": "linear-gradient(135deg, #6C5CE7, #4A90D9)",
                                     "color": "white", "borderRadius": "12px", "fontWeight": "600", "marginTop": "16px"})
@@ -150,7 +151,7 @@ def create_overview_layout(show_goal_stats=False):
     header = html.Div([
         html.Div([
             html.Div(f"{_greeting()}, {name}", className="dash-greeting"),
-            html.Div("BioScale · Composição Corporal", className="dash-subtitle"),
+            html.Div(t("overview.app_subtitle"), className="dash-subtitle"),
         ]),
         dcc.Link(
             html.Div(name[0].upper(), style={
@@ -184,14 +185,14 @@ def create_overview_layout(show_goal_stats=False):
                 delta_block = html.Div([
                     html.Div(f"{delta_sign}{delta_weight:.2f} kg", style={
                         "fontFamily": "'Nunito'", "fontSize": "1.1rem", "fontWeight": "800", "color": delta_color}),
-                    html.Div(f"anterior: {prev_w:.2f}", style={
+                    html.Div(t("overview.previous") + f": {prev_w:.2f}", style={
                         "fontSize": "0.68rem", "color": "var(--text-muted)"}),
                 ], style={"textAlign": "right"})
             else:
                 delta_block = html.Div([
                     html.Div(f"= {prev_w:.2f} kg", style={
                         "fontFamily": "'Nunito'", "fontSize": "1.1rem", "fontWeight": "800", "color": "var(--text-muted)"}),
-                    html.Div("mesmo peso", style={
+                    html.Div(t("overview.same_weight"), style={
                         "fontSize": "0.68rem", "color": "var(--text-muted)"}),
                 ], style={"textAlign": "right"})
 
@@ -199,7 +200,7 @@ def create_overview_layout(show_goal_stats=False):
             # Top part: clickable to composicao
             dcc.Link(
                 html.Div([
-                    html.Div("PESO ATUAL", className="label"),
+                    html.Div(t("overview.current_weight"), className="label"),
                     html.Div([
                         html.Div([
                             html.Span(f"{weight_val:.2f}", className="weight-big", id="home-weight-display"),
@@ -216,7 +217,7 @@ def create_overview_layout(show_goal_stats=False):
                             html.Div(className="bmi-indicator", style={"left": f"{bmi_pos}%"})
                         ], className="bmi-bar"),
                         html.Div([
-                            html.Span("Baixo"), html.Span("Ideal"), html.Span("Alto"), html.Span("Obeso")
+                            html.Span(t("bmi.low")), html.Span(t("bmi.ideal")), html.Span(t("bmi.high")), html.Span(t("bmi.obese_short"))
                         ], className="bmi-labels"),
                     ], className="bmi-bar-container"),
                 ]),
@@ -225,7 +226,7 @@ def create_overview_layout(show_goal_stats=False):
 
             # BLE controls inside the card
             html.Hr(style={"border": "none", "borderTop": "1px solid var(--border-light)", "margin": "12px 0"}),
-            html.Button("→ →  Pesar Agora  ← ←", id="btn-start-measurement", n_clicks=0, className="btn-pesar"),
+            html.Button(t("overview.weigh_now_btn"), id="btn-start-measurement", n_clicks=0, className="btn-pesar"),
             html.Div(id="home-measure-status"),
             html.Div([
                 html.Div(id="home-ble-indicator", style={"display": "inline-block", "verticalAlign": "middle"}),
@@ -235,15 +236,15 @@ def create_overview_layout(show_goal_stats=False):
         ], className="weight-hero")
     else:
         weight_hero = html.Div([
-            html.Div("PESO ATUAL", className="label"),
+            html.Div(t("overview.current_weight"), className="label"),
             html.Div([
                 html.Span("--", className="weight-big", id="home-weight-display"),
                 html.Span("kg", className="weight-unit"),
             ]),
-            html.P("Nenhuma medição. Suba na balança!",
+            html.P(t("overview.no_measurements"),
                    style={"color": "var(--text-muted)", "fontSize": "0.85rem", "marginTop": "8px"}),
             html.Hr(style={"border": "none", "borderTop": "1px solid var(--border-light)", "margin": "12px 0"}),
-            html.Button("→ →  Pesar Agora  ← ←", id="btn-start-measurement", n_clicks=0, className="btn-pesar"),
+            html.Button(t("overview.weigh_now_btn"), id="btn-start-measurement", n_clicks=0, className="btn-pesar"),
             html.Div(id="home-measure-status"),
             html.Div([
                 html.Div(id="home-ble-indicator", style={"display": "inline-block", "verticalAlign": "middle"}),
@@ -257,15 +258,15 @@ def create_overview_layout(show_goal_stats=False):
     quick_actions = html.Div([
         dcc.Link(html.Div([
             html.Div(html.Img(src="/assets/icon_historico.png"), className="quick-action-icon"),
-            html.Span("Histórico", className="quick-action-label")
+            html.Span(t("overview.quick_history"), className="quick-action-label")
         ], className="quick-action"), href="/historico", style=link_style),
         dcc.Link(html.Div([
             html.Div(html.Img(src="/assets/icon_composicao.png"), className="quick-action-icon"),
-            html.Span("Composição", className="quick-action-label")
+            html.Span(t("overview.quick_composition"), className="quick-action-label")
         ], className="quick-action"), href="/composicao", style=link_style),
         dcc.Link(html.Div([
             html.Div(html.Img(src="/assets/icon_config.png"), className="quick-action-icon"),
-            html.Span("Configurações", className="quick-action-label")
+            html.Span(t("overview.quick_settings"), className="quick-action-label")
         ], className="quick-action"), href="/config", style=link_style),
     ], className="quick-actions")
 
@@ -306,7 +307,7 @@ def create_overview_layout(show_goal_stats=False):
 
     goal_card = html.Div(id="goal-card-container", children=[
         html.Div([
-            html.Span("Objetivo de Peso", className="goal-card-title"),
+            html.Span(t("overview.goal_title"), className="goal-card-title"),
             html.Div(
                 toggle_icon,
                 id="btn-toggle-goal-form",
@@ -319,13 +320,13 @@ def create_overview_layout(show_goal_stats=False):
         html.Div(id="goal-view-stats", style=stats_style, children=[
             _build_goal_stats(target, diff, is_custom_goal, has_data, last)
         ]) if target > 0 else html.Div(id="goal-view-stats", style=stats_style, children=[
-            html.P("Preencha sua altura no perfil para calcular o peso ideal.",
+            html.P(t("overview.goal_fill_height"),
                    style={"textAlign": "center", "fontSize": "0.8rem", "color": "var(--text-muted)", "padding": "12px 0"})
         ]),
 
         # Edit Form view
         html.Div(id="goal-edit-form", style=form_style, children=[
-            html.P("Defina sua meta de peso:", style={"fontSize": "0.8rem", "color": "var(--text-secondary)", "marginTop": "8px", "marginBottom": "8px"}),
+            html.P(t("overview.goal_define"), style={"fontSize": "0.8rem", "color": "var(--text-secondary)", "marginTop": "8px", "marginBottom": "8px"}),
             html.Div([
                 dcc.Input(
                     id="input-new-goal-weight",
@@ -338,7 +339,7 @@ def create_overview_layout(show_goal_stats=False):
                     }
                 ),
                 html.Button(
-                    "Salvar",
+                    t("common.save"),
                     id="btn-save-new-goal",
                     style={
                         "padding": "10px 16px", "borderRadius": "8px", "border": "none",
@@ -348,7 +349,7 @@ def create_overview_layout(show_goal_stats=False):
                 )
             ], style={"display": "flex", "gap": "8px"}),
             html.Button(
-                f"Usar Peso Ideal ({ideal_weight:.1f} kg)" if ideal_weight > 0 else "Usar Peso Ideal",
+                t("overview.goal_use_ideal").format(weight=f"{ideal_weight:.1f}") if ideal_weight > 0 else t("overview.goal_use_ideal_no_weight"),
                 id="btn-use-ideal-weight",
                 style={
                     "width": "100%", "marginTop": "8px", "padding": "10px 16px", "borderRadius": "8px",
@@ -382,7 +383,7 @@ def create_overview_layout(show_goal_stats=False):
 def start_measurement(n):
     if n and n > 0:
         start_ble_measurement_thread()
-    return "Iniciando..."
+    return t("overview.starting")
 
 
 @callback(
@@ -422,17 +423,17 @@ def home_poll_ble(n, already_saved):
     m_text = ""
     m_style = {"textAlign": "center", "fontSize": "0.85rem", "marginTop": "8px", "padding": "8px", "borderRadius": "10px"}
     if "Suba" in status or "Escutando" in status:
-        m_text = "⏳ Suba na balança agora..."
+        m_text = t("overview.step_on_scale")
         m_style.update({"color": "var(--blue)", "background": "var(--blue-light)"})
     elif "Conectado" in status:
         w = snap["weight"]
         weight_str = f"{w:.2f}"  # Live update!
-        m_text = f"⚖️ Medindo... {w:.2f} kg"
+        m_text = t("overview.measuring").format(weight=f"{w:.2f}")
         m_style.update({"color": "var(--green)", "background": "var(--green-light)"})
     elif status == "Finalizado":
         w = snap["weight"]
         weight_str = f"{w:.2f}"
-        m_text = f"✅ Medição completa: {w:.2f} kg"
+        m_text = t("overview.measurement_complete").format(weight=f"{w:.2f}")
         m_style.update({"color": "var(--green)", "background": "var(--green-light)"})
     elif snap.get("scan_error"):
         m_text = f"⚠️ {snap['scan_error']}"
@@ -481,7 +482,7 @@ def home_poll_ble(n, already_saved):
                             )
                             db3.add(m_obj)
                             db3.commit()
-                            save_alert = html.Div("✓ Medição salva automaticamente", className="alert-health alert-success")
+                            save_alert = html.Div(t("overview.measurement_saved"), className="alert-health alert-success")
                             save_done = True
                             # Clear BLE state so redirect doesn't re-save
                             app_state.reset()
@@ -539,7 +540,7 @@ def toggle_and_save_goal(toggle_clicks, save_clicks, ideal_clicks, new_weight, c
                     
                     if trigger_id == "btn-save-new-goal":
                         if not new_weight or new_weight < 20 or new_weight > 250:
-                            msg = html.Div("Por favor, insira um peso válido (20 - 250kg).", className="alert-health alert-error")
+                            msg = html.Div(t("overview.goal_invalid"), className="alert-health alert-error")
                             return no_update, no_update, msg, no_update
                         target_val = new_weight
                     else:

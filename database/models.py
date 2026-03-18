@@ -20,6 +20,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    language: Mapped[Optional[str]] = mapped_column(String(5), nullable=True, default='pt')
 
     measurements = relationship("Measurement", back_populates="user", cascade="all, delete-orphan")
     goals = relationship("Goal", back_populates="user", cascade="all, delete-orphan")

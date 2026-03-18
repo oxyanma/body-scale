@@ -4,6 +4,7 @@ Reusable ref-bar and expandable metric row for dashboard + composition.
 """
 import base64
 from dash import html
+from i18n import t
 
 
 # ── Color maps ──
@@ -117,32 +118,38 @@ def create_ref_bar(value, bounds, zone_labels, zone_colors_list):
     ], style={"marginTop": "4px"})
 
 
-# ── Predefined zone info by metric key ──
-METRIC_ZONES = {
-    "weight":          (["Baixo", "Ideal", "Alto", "Obeso"],         ["info", "success", "warning", "danger"]),
-    "bmi":             (["Abaixo", "Ideal", "Sobrepeso", "Obeso"],   ["info", "success", "warning", "danger"]),
-    "obesity_percent": (["Baixo", "Saudável", "Acima", "Obeso"],     ["info", "success", "warning", "danger"]),
-    "body_fat":        (["Baixo", "Normal", "Alto", "Obeso"],        ["info", "success", "warning", "danger"]),
-    "visceral_fat":    (["Normal", "Alto", "Perigoso", "Risco"],     ["success", "warning", "danger", "danger"]),
-    "subcutaneous_fat":(["Normal", "Alto", "Obeso", "Risco"],        ["success", "warning", "danger", "danger"]),
-    "body_water":      (["Baixo", "Normal", "Alto", "Retenção"],     ["info", "success", "warning", "danger"]),
-    "muscle_mass":     (["Baixo", "Normal", "Bom", "Excelente"],     ["warning", "success", "primary", "info"]),
-    "smm_percent":     (["Baixo", "Saudável", "Excelente", "Atleta"],["warning", "success", "primary", "info"]),
-    "smm":             (["Baixo", "Normal", "Bom", "Atleta"],        ["warning", "success", "primary", "info"]),
-    "ffmi":            (["Baixo", "Normal", "Forte", "Atleta"],      ["warning", "success", "primary", "info"]),
-    "smi":             (["Sarcopenia", "Baixo", "Normal", "Forte"],  ["danger", "warning", "success", "primary"]),
-    "bone_mass":       (["Baixo", "Normal", "Bom", "Alto"],          ["warning", "success", "primary", "info"]),
-    "protein":         (["Baixo", "Normal", "Bom", "Alto"],          ["warning", "success", "primary", "info"]),
-    "bmr":             (["Baixo", "Normal", "Alto", "Super"],        ["warning", "success", "primary", "info"]),
-    "metabolic_age":   (["Jovem", "Normal", "Acima", "Envelhecido"], ["primary", "success", "warning", "danger"]),
-    "ideal_weight":    (["Magro", "Ideal", "Acima", "Longe"],        ["info", "success", "warning", "danger"]),
-    "body_score":      (["Baixo", "Regular", "Bom", "Excelente"],    ["danger", "warning", "success", "primary"]),
-    "whr":             (["Bom", "Normal", "Alto", "Risco"],          ["primary", "success", "warning", "danger"]),
-    "whtr":            (["Magro", "Normal", "Risco", "Alto Risco"],  ["info", "success", "warning", "danger"]),
-    "fat_mass":        (["Baixo", "Normal", "Alto", "Obeso"],        ["info", "success", "warning", "danger"]),
-    "muscle_mass_kg":  (["Baixo", "Normal", "Bom", "Excelente"],     ["warning", "success", "primary", "info"]),
-    "water_mass":      (["Baixo", "Normal", "Alto", "Retenção"],     ["info", "success", "warning", "danger"]),
-    "lbm":             (["Baixo", "Normal", "Bom", "Excelente"],     ["warning", "success", "primary", "info"]),
+# ── Zone label helper ──
+def _get_zone_labels(key):
+    """Get translated zone labels for a metric."""
+    return [t(f"zone.{key}.1"), t(f"zone.{key}.2"), t(f"zone.{key}.3"), t(f"zone.{key}.4")]
+
+
+# ── Zone colors by metric key ──
+METRIC_ZONE_COLORS = {
+    "weight":          ["info", "success", "warning", "danger"],
+    "bmi":             ["info", "success", "warning", "danger"],
+    "obesity_percent": ["info", "success", "warning", "danger"],
+    "body_fat":        ["info", "success", "warning", "danger"],
+    "visceral_fat":    ["success", "warning", "danger", "danger"],
+    "subcutaneous_fat":["success", "warning", "danger", "danger"],
+    "body_water":      ["info", "success", "warning", "danger"],
+    "muscle_mass":     ["warning", "success", "primary", "info"],
+    "smm_percent":     ["warning", "success", "primary", "info"],
+    "smm":             ["warning", "success", "primary", "info"],
+    "ffmi":            ["warning", "success", "primary", "info"],
+    "smi":             ["danger", "warning", "success", "primary"],
+    "bone_mass":       ["warning", "success", "primary", "info"],
+    "protein":         ["warning", "success", "primary", "info"],
+    "bmr":             ["warning", "success", "primary", "info"],
+    "metabolic_age":   ["primary", "success", "warning", "danger"],
+    "ideal_weight":    ["info", "success", "warning", "danger"],
+    "body_score":      ["danger", "warning", "success", "primary"],
+    "whr":             ["primary", "success", "warning", "danger"],
+    "whtr":            ["info", "success", "warning", "danger"],
+    "fat_mass":        ["info", "success", "warning", "danger"],
+    "muscle_mass_kg":  ["warning", "success", "primary", "info"],
+    "water_mass":      ["info", "success", "warning", "danger"],
+    "lbm":             ["warning", "success", "primary", "info"],
 }
 
 # ── Unique SVG icon paths per metric (24x24 viewBox, stroke-based) ──
@@ -198,16 +205,9 @@ METRIC_SVG = {
     "weight": f'<rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 14V9a5 5 0 0 1 10 0v5"/><circle cx="12" cy="17" r="1.5" fill="{_C}" stroke="none"/>',
 }
 
-# ── Names by metric ──
-METRIC_NAMES = {
-    "weight": "Peso", "bmi": "IMC", "obesity_percent": "Grau de Obesidade", "body_fat": "Gordura Corporal", "visceral_fat": "Gordura Visceral",
-    "subcutaneous_fat": "Gord. Subcutânea", "body_water": "Água Corporal", "muscle_mass": "Massa Muscular",
-    "smm_percent": "M. Esquelética (%)", "smm": "Massa Esquelética", "ffmi": "FFMI", "smi": "SMI", "bone_mass": "Massa Óssea",
-    "protein": "Proteína", "bmr": "Taxa Metabólica Basal", "metabolic_age": "Idade Metabólica",
-    "ideal_weight": "Peso Ideal", "body_score": "Body Score", "whr": "Relação Cintura-Quadril", "whtr": "Relação Cintura-Estatura",
-    "fat_mass": "Peso da Gordura", "muscle_mass_kg": "Massa Muscular (kg)",
-    "water_mass": "Peso da Água", "lbm": "LBM",
-}
+# ── Metric name helper ──
+def _get_metric_name(key):
+    return t(f"metric.{key}")
 
 
 def _make_icon_uri(key):
@@ -233,11 +233,11 @@ def create_metric_row(key, classification, is_missing=False, row_id_prefix="metr
     if is_missing:
         val_str = "--"
         unit = ""
-        name = METRIC_NAMES.get(key, key.replace("_", " ").title())
-        label = "Pendente"
+        name = _get_metric_name(key)
+        label = t("metric.pending")
         txt_color = "var(--text-muted)"
         bg_color = "transparent"
-        desc = "Complete o seu perfil (Idade, Altura, Sexo) na aba 'Perfil' para podermos calcular esta métrica."
+        desc = t("metric.pending_desc")
         ref_bar = ""
         opacity = "0.5"
     else:
@@ -260,8 +260,8 @@ def create_metric_row(key, classification, is_missing=False, row_id_prefix="metr
             val_str = str(val)
 
         # Get zone info
-        zone_labels, zone_colors = METRIC_ZONES.get(key, (["Baixo", "Normal", "Alto", "Muito Alto"],
-                                                            ["info", "success", "warning", "danger"]))
+        zone_labels = _get_zone_labels(key)
+        zone_colors = METRIC_ZONE_COLORS.get(key, ["info", "success", "warning", "danger"])
 
         # Ref bar
         ref_bar = create_ref_bar(val, bounds, zone_labels, zone_colors) if bounds else ""

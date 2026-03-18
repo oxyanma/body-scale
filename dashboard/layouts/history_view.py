@@ -8,9 +8,11 @@ import plotly.graph_objects as go
 from database.db import SessionLocal
 from database.models import User, Measurement
 from datetime import datetime, timedelta
+from i18n import t
 
-MONTHS_PT_SHORT = {1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun",
-                   7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"}
+
+def _month_short(n):
+    return t(f"month_short.{n}")
 
 STATUS_COLORS = {
     "success": "var(--green)", "primary": "var(--blue)",
@@ -23,15 +25,15 @@ STATUS_BG = {
 
 
 def _bmi_status(bmi):
-    if not bmi or bmi < 18.5: return "Abaixo", "primary"
-    if bmi < 25: return "Normal", "success"
-    if bmi < 30: return "Sobrepeso", "warning"
-    return "Obeso", "danger"
+    if not bmi or bmi < 18.5: return t("bmi.below"), "primary"
+    if bmi < 25: return t("bmi.normal"), "success"
+    if bmi < 30: return t("bmi.overweight"), "warning"
+    return t("bmi.obese"), "danger"
 
 
 def _format_date(dt):
     if not dt: return "--"
-    return f"{dt.day:02d} {MONTHS_PT_SHORT.get(dt.month, '')}, {dt.hour:02d}:{dt.minute:02d}"
+    return f"{dt.day:02d} {_month_short(dt.month)}, {dt.hour:02d}:{dt.minute:02d}"
 
 
 def create_history_view():
@@ -39,7 +41,7 @@ def create_history_view():
     try:
         user = db.query(User).filter(User.is_active == True).first()
         if not user:
-            return html.Div("Nenhum perfil encontrado.")
+            return html.Div(t("common.no_profile"))
 
         measurements = db.query(Measurement).filter(
             Measurement.user_id == user.id
@@ -49,7 +51,7 @@ def create_history_view():
 
     header = html.Div([
         dcc.Link(html.Button("‹", className="back-btn"), href="/"),
-        html.H1("Histórico"),
+        html.H1(t("history.title")),
         html.Button([
             html.Img(src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8'/%3E%3Cpolyline points='16 6 12 2 8 6'/%3E%3Cline x1='12' y1='2' x2='12' y2='15'/%3E%3C/svg%3E",
                      className="export-icon"),
@@ -61,9 +63,9 @@ def create_history_view():
         return html.Div([
             header,
             html.Div([
-                html.P("Nenhuma medição registrada ainda.",
+                html.P(t("history.no_measurements"),
                        style={"textAlign": "center", "padding": "40px 0", "color": "var(--text-secondary)"}),
-                dcc.Link("← Pesar agora", href="/",
+                dcc.Link(t("common.weigh_now"), href="/",
                          style={"display": "block", "textAlign": "center", "color": "var(--blue)", "fontWeight": "600"})
             ], className="health-card")
         ])
@@ -110,16 +112,16 @@ def create_history_view():
     trend_card = html.Div([
         html.Div([
             html.Div([
-                html.Div("TENDÊNCIA DE PESO", className="trend-label"),
+                html.Div(t("history.weight_trend"), className="trend-label"),
                 html.Div([
                     html.Span(f"{avg_weight:.2f}", className="trend-value"),
-                    html.Span(" kg (média)", className="trend-unit"),
+                    html.Span(" " + t("history.average"), className="trend-unit"),
                 ]),
             ]),
             html.Div([
                 html.Div(f"{'↓' if delta_30d <= 0 else '↑'} {abs(delta_30d):.2f} kg",
                          className=f"trend-delta-value {delta_color_cls}"),
-                html.Div("VARIAÇÃO 30D", className="trend-delta-label"),
+                html.Div(t("history.variation_30d"), className="trend-delta-label"),
             ], className="trend-delta"),
         ], className="trend-header"),
         dcc.Graph(figure=fig, config={"displayModeBar": False}, style={"marginTop": "8px"}),
@@ -127,13 +129,13 @@ def create_history_view():
         # Stats inline inside trend card
         html.Div([
             html.Div([
-                html.Div("MÁXIMO", className="stat-box-label"),
+                html.Div(t("history.max"), className="stat-box-label"),
                 html.Div(f"{max_weight:.2f} kg", className="stat-box-value",
                          style={"fontSize": "1rem", "marginTop": "2px"}),
             ], className="stat-box", style={"boxShadow": "none", "border": "none",
                                              "background": "var(--bg-main)", "padding": "10px 14px"}),
             html.Div([
-                html.Div("MÍNIMO", className="stat-box-label"),
+                html.Div(t("history.min"), className="stat-box-label"),
                 html.Div(f"{min_weight:.2f} kg", className="stat-box-value",
                          style={"fontSize": "1rem", "marginTop": "2px"}),
             ], className="stat-box", style={"boxShadow": "none", "border": "none",
@@ -145,11 +147,11 @@ def create_history_view():
     compare_bar = html.Div(id="compare-bar", children=[
         html.Div("📊", style={"fontSize": "1.2rem"}),
         html.Div([
-            html.Div("Comparar Medições", style={"fontWeight": "700", "fontSize": "0.88rem"}),
-            html.Span("Selecione 2 medições abaixo", id="compare-bar-text",
+            html.Div(t("history.compare_title"), style={"fontWeight": "700", "fontSize": "0.88rem"}),
+            html.Span(t("history.compare_select"), id="compare-bar-text",
                        style={"fontSize": "0.72rem", "opacity": "0.85"}),
         ], style={"flex": "1"}),
-        dcc.Link("Comparar →", id="compare-bar-link", href="#",
+        dcc.Link(t("history.compare_btn"), id="compare-bar-link", href="#",
                  style={"display": "none", "fontSize": "0.78rem", "fontWeight": "700",
                         "color": "var(--blue)", "background": "white",
                         "padding": "6px 16px", "borderRadius": "20px", "textDecoration": "none",
@@ -207,19 +209,19 @@ def create_history_view():
         ], className="record-row"))
 
     records_section = html.Div([
-        html.Div("REGISTROS", className="section-label"),
+        html.Div(t("history.records"), className="section-label"),
         html.Div(records, className="metric-list"),
     ])
 
     # ── Delete Modal ──
     delete_modal = dbc.Modal([
-        dbc.ModalHeader("Excluir Medição", style={"color": "var(--text-primary)"}),
-        dbc.ModalBody("Tem certeza que deseja excluir esta medição?",
+        dbc.ModalHeader(t("history.delete_title"), style={"color": "var(--text-primary)"}),
+        dbc.ModalBody(t("history.delete_confirm"),
                       style={"color": "var(--text-secondary)"}),
         dbc.ModalFooter([
-            dbc.Button("Cancelar", id="btn-cancel-delete", className="btn-outline-health",
+            dbc.Button(t("common.cancel"), id="btn-cancel-delete", className="btn-outline-health",
                        style={"width": "auto", "marginRight": "8px"}),
-            dbc.Button("Excluir", id="btn-confirm-delete", className="btn-danger"),
+            dbc.Button(t("common.delete"), id="btn-confirm-delete", className="btn-danger"),
         ]),
     ], id="modal-delete-measurement", is_open=False)
 
@@ -249,7 +251,7 @@ def update_compare_bar(values):
                     "boxShadow": "0 2px 6px rgba(0,0,0,0.15)", "whiteSpace": "nowrap"}
 
     if not values:
-        return ("Selecione 2 medições abaixo", base_text_style, "#", hidden_link)
+        return (t("history.compare_select"), base_text_style, "#", hidden_link)
 
     checked_ids = []
     for i, v in enumerate(values):
@@ -257,18 +259,18 @@ def update_compare_bar(values):
             checked_ids.append(ctx.inputs_list[0][i]["id"]["index"])
 
     if len(checked_ids) == 0:
-        return ("Selecione 2 medições abaixo", base_text_style, "#", hidden_link)
+        return (t("history.compare_select"), base_text_style, "#", hidden_link)
     elif len(checked_ids) == 1:
-        return ("1 de 2 selecionada...",
+        return (t("history.compare_1of2"),
                 {"fontSize": "0.72rem", "opacity": "1", "fontWeight": "600"},
                 "#", hidden_link)
     elif len(checked_ids) == 2:
         href = f"/comparacao?a={checked_ids[0]}&b={checked_ids[1]}"
-        return ("2 selecionadas",
+        return (t("history.compare_2of2"),
                 {"fontSize": "0.72rem", "opacity": "1", "fontWeight": "600"},
                 href, visible_link)
     else:
-        return ("Selecione apenas 2",
+        return (t("history.compare_only2"),
                 {"fontSize": "0.72rem", "opacity": "1", "color": "#FFD6DB", "fontWeight": "600"},
                 "#", hidden_link)
 

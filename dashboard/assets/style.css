@@ -999,3 +999,31 @@ a.goal-card-link:hover { color: var(--blue-dark); text-decoration: underline !im
     border-color: var(--blue);
 }
 
+/* ── Language Selector ── */
+.lang-selector {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 0 4px;
+    max-width: 480px;
+    margin: 0 auto;
+}
+.lang-btn {
+    background: none;
+    border: 2px solid transparent;
+    font-size: 1.3rem;
+    cursor: pointer;
+    opacity: 0.4;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: var(--transition);
+    line-height: 1;
+}
+.lang-btn:hover { opacity: 0.7; }
+.lang-btn[style*="opacity: 1"],
+.lang-btn.active {
+    opacity: 1 !important;
+    border-color: var(--blue);
+    background: var(--blue-light);
+}
+

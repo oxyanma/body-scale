@@ -3,6 +3,7 @@ from dash import html, dcc, Input, Output, State, callback, no_update, ctx
 import dash_bootstrap_components as dbc
 from database.db import SessionLocal
 from database.models import User
+from i18n import t
 
 
 def create_profile_view():
@@ -17,16 +18,16 @@ def create_profile_view():
 
     header = html.Div([
         dcc.Link(html.Button("‹", className="back-btn"), href="/"),
-        html.H1("Perfis"),
+        html.H1(t("profile.title")),
     ], className="page-header")
 
     selector = html.Div([
         html.Div([
             html.Div([
-                html.Label("Membro da Família", className="form-label"),
+                html.Label(t("profile.family_member"), className="form-label"),
                 dbc.Select(id="profile-selector", options=user_options, value=active_value)
             ], style={"flex": "1"}),
-            html.Button("+ Novo", id="btn-new-profile", n_clicks=0,
+            html.Button(t("profile.new"), id="btn-new-profile", n_clicks=0,
                         className="btn-outline-health", style={"width": "auto", "marginTop": "20px", "padding": "8px 16px"}),
         ], style={"display": "flex", "gap": "12px", "alignItems": "flex-start"})
     ], className="health-card")
@@ -35,57 +36,57 @@ def create_profile_view():
 
 
         html.Div([
-            html.Label("Nome", className="form-label"),
-            dbc.Input(id="input-profile-name", type="text", placeholder="Nome completo"),
+            html.Label(t("profile.name"), className="form-label"),
+            dbc.Input(id="input-profile-name", type="text", placeholder=t("profile.name_placeholder")),
         ], className="form-group"),
 
         html.Div([
             html.Div([
-                html.Label("Sexo", className="form-label"),
+                html.Label(t("profile.sex"), className="form-label"),
                 dbc.Select(id="input-profile-sex", options=[
-                    {"label": "Masculino", "value": "M"},
-                    {"label": "Feminino", "value": "F"}
+                    {"label": t("profile.male"), "value": "M"},
+                    {"label": t("profile.female"), "value": "F"}
                 ]),
             ], style={"flex": "1"}),
             html.Div([
-                html.Label("Idade", className="form-label"),
+                html.Label(t("profile.age"), className="form-label"),
                 dbc.Input(id="input-profile-age", type="number", min=1, max=120),
             ], style={"flex": "1"}),
         ], style={"display": "flex", "gap": "12px"}, className="form-group"),
 
         html.Div([
             html.Div([
-                html.Label("Altura (cm)", className="form-label"),
+                html.Label(t("profile.height"), className="form-label"),
                 dbc.Input(id="input-profile-height", type="number", min=50, max=250),
             ], style={"flex": "1"}),
             html.Div([
-                html.Label("Atividade", className="form-label"),
+                html.Label(t("profile.activity"), className="form-label"),
                 dbc.Select(id="input-profile-activity", options=[
-                    {"label": "Sedentário", "value": "sedentary"},
-                    {"label": "Leve", "value": "light"},
-                    {"label": "Moderado", "value": "moderate"},
-                    {"label": "Intenso", "value": "intense"},
-                    {"label": "Atleta", "value": "athlete"},
+                    {"label": t("profile.activity_sedentary"), "value": "sedentary"},
+                    {"label": t("profile.activity_light"), "value": "light"},
+                    {"label": t("profile.activity_moderate"), "value": "moderate"},
+                    {"label": t("profile.activity_intense"), "value": "intense"},
+                    {"label": t("profile.activity_athlete"), "value": "athlete"},
                 ]),
             ], style={"flex": "1"}),
         ], style={"display": "flex", "gap": "12px"}, className="form-group"),
 
         # Optional anthropometrics
         html.Div([
-            html.Label("Medidas Opcionais", className="form-label"),
-            html.P("Desbloqueia WHR, WHtR e Risco Cardiovascular",
+            html.Label(t("profile.optional_measures"), className="form-label"),
+            html.P(t("profile.optional_desc"),
                    style={"fontSize": "0.75rem", "color": "var(--text-muted)", "marginBottom": "8px"}),
             html.Div([
                 html.Div([
-                    dbc.Input(id="input-profile-waist", type="number", min=40, max=200, placeholder="Cintura (cm)"),
+                    dbc.Input(id="input-profile-waist", type="number", min=40, max=200, placeholder=t("profile.waist")),
                 ], style={"flex": "1"}),
                 html.Div([
-                    dbc.Input(id="input-profile-hip", type="number", min=40, max=200, placeholder="Quadril (cm)"),
+                    dbc.Input(id="input-profile-hip", type="number", min=40, max=200, placeholder=t("profile.hip")),
                 ], style={"flex": "1"}),
             ], style={"display": "flex", "gap": "12px"}),
         ], className="form-group"),
 
-        html.Button("Salvar Perfil", id="btn-save-profile", n_clicks=0, className="btn-health full"),
+        html.Button(t("profile.save_btn"), id="btn-save-profile", n_clicks=0, className="btn-health full"),
         html.Div(id="profile-alert-container", style={"marginTop": "12px"}),
     ], className="health-card", style={"marginTop": "12px"})
 
@@ -120,7 +121,7 @@ def handle_profile(load_trigger, selected_user_id, btn_new, btn_save, name, sex,
     alert = no_update
 
     if trigger_id == "btn-new-profile":
-        return no_update, None, "", "M", 30, 170, "moderate", None, None, html.Div("Preencha os dados do novo perfil.", className="alert-health alert-info")
+        return no_update, None, "", "M", 30, 170, "moderate", None, None, html.Div(t("profile.fill_new"), className="alert-health alert-info")
 
     db = SessionLocal()
     try:
@@ -143,7 +144,7 @@ def handle_profile(load_trigger, selected_user_id, btn_new, btn_save, name, sex,
             user.is_active = True
             db.commit()
             selected_user_id = str(user.id)
-            alert = html.Div(f"✓ Perfil '{user.name}' salvo!", className="alert-health alert-success")
+            alert = html.Div(t("profile.saved").format(name=user.name), className="alert-health alert-success")
 
         elif trigger_id == "profile-selector" and selected_user_id:
             db.query(User).update({User.is_active: False})
@@ -151,7 +152,7 @@ def handle_profile(load_trigger, selected_user_id, btn_new, btn_save, name, sex,
             if user:
                 user.is_active = True
                 db.commit()
-                alert = html.Div(f"Perfil de {user.name} ativado.", className="alert-health alert-success")
+                alert = html.Div(t("profile.activated").format(name=user.name), className="alert-health alert-success")
 
         users = db.query(User).all()
         options = [{"label": u.name, "value": str(u.id)} for u in users]

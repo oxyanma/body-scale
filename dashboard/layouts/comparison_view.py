@@ -7,36 +7,39 @@ from dash import html, dcc
 from database.db import SessionLocal
 from database.models import User, Measurement
 from calculations.body_composition import get_all_metrics, get_classifications
+from i18n import t
 
-MONTHS_PT_SHORT = {1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun",
-                   7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"}
 
-# Groups of (classification_key, display_name, higher_is_better)
+def _month_short(n):
+    return t(f"month_short.{n}")
+
+
+# Groups of (classification_key, i18n_key, higher_is_better)
 COMPARE_GROUPS = {
-    "Resumo": [
-        ("weight_kg",      "Peso (Kg)",          False),
-        ("bmi",            "IMC",                False),
-        ("body_score",     "Pontuação Corporal", True),
-        ("metabolic_age",  "Idade Metabólica",   False),
+    "comparison.group_summary": [
+        ("weight_kg",      "comparison.weight_kg",      False),
+        ("bmi",            "comparison.bmi",             False),
+        ("body_score",     "comparison.body_score",      True),
+        ("metabolic_age",  "comparison.metabolic_age",   False),
     ],
-    "Gordura": [
-        ("body_fat",       "Gordura (%)",        False),
-        ("fat_mass",       "Peso Gordura (Kg)",  False),
-        ("visceral_fat",   "Gordura Visceral",   False),
+    "comparison.group_fat": [
+        ("body_fat",       "comparison.body_fat",        False),
+        ("fat_mass",       "comparison.fat_mass",        False),
+        ("visceral_fat",   "comparison.visceral_fat",    False),
     ],
-    "Muscular": [
-        ("muscle_mass",    "Músculo (%)",        True),
-        ("muscle_mass_kg", "Peso Músculo (Kg)",  True),
-        ("smm",            "SMM (Kg)",           True),
-        ("ffmi",           "FFMI",               True),
-        ("lbm",            "LBM (Kg)",           True),
+    "comparison.group_muscle": [
+        ("muscle_mass",    "comparison.muscle_mass",     True),
+        ("muscle_mass_kg", "comparison.muscle_mass_kg",  True),
+        ("smm",            "comparison.smm",             True),
+        ("ffmi",           "comparison.ffmi",            True),
+        ("lbm",            "comparison.lbm",             True),
     ],
-    "Composição": [
-        ("body_water",     "Água (%)",           True),
-        ("water_mass",     "Peso Água (Kg)",     True),
-        ("bone_mass",      "Massa Óssea (Kg)",   True),
-        ("protein",        "Proteína (%)",       True),
-        ("bmr",            "TMB (kcal)",         True),
+    "comparison.group_composition": [
+        ("body_water",     "comparison.body_water",      True),
+        ("water_mass",     "comparison.water_mass",      True),
+        ("bone_mass",      "comparison.bone_mass",       True),
+        ("protein",        "comparison.protein",         True),
+        ("bmr",            "comparison.bmr",             True),
     ],
 }
 
@@ -78,12 +81,12 @@ def create_comparison_view(id_a=None, id_b=None):
         return html.Div([
             html.Div([
                 dcc.Link(html.Button("‹", className="back-btn"), href="/historico"),
-                html.H1("Comparar Medições"),
+                html.H1(t("comparison.title")),
             ], className="page-header"),
             html.Div([
-                html.P("Selecione 2 medições no histórico para comparar.",
+                html.P(t("comparison.select_prompt"),
                        style={"textAlign": "center", "padding": "40px 0", "color": "var(--text-secondary)"}),
-                dcc.Link("← Voltar ao Histórico", href="/historico",
+                dcc.Link(t("comparison.back_history"), href="/historico",
                          style={"display": "block", "textAlign": "center", "color": "var(--blue)", "fontWeight": "600"})
             ], className="health-card")
         ])
@@ -98,9 +101,9 @@ def create_comparison_view(id_a=None, id_b=None):
             return html.Div([
                 html.Div([
                     dcc.Link(html.Button("‹", className="back-btn"), href="/historico"),
-                    html.H1("Comparar Medições"),
+                    html.H1(t("comparison.title")),
                 ], className="page-header"),
-                html.Div("Medições não encontradas.", className="health-card",
+                html.Div(t("comparison.not_found"), className="health-card",
                          style={"textAlign": "center", "padding": "24px"})
             ])
 
@@ -130,7 +133,7 @@ def create_comparison_view(id_a=None, id_b=None):
     # ── Header ──
     header = html.Div([
         dcc.Link(html.Button("‹", className="back-btn"), href="/historico"),
-        html.H1("Comparar Medições"),
+        html.H1(t("comparison.title")),
         html.Button([
             html.Img(src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8'/%3E%3Cpolyline points='16 6 12 2 8 6'/%3E%3Cline x1='12' y1='2' x2='12' y2='15'/%3E%3C/svg%3E",
                      className="export-icon"),
@@ -141,14 +144,14 @@ def create_comparison_view(id_a=None, id_b=None):
     # ── Time Badge ──
     days_diff = abs((m_a.measured_at - m_b.measured_at).days)
     if days_diff == 0:
-        badge_text = "Mesmo dia"
+        badge_text = t("comparison.same_day")
     elif days_diff == 1:
-        badge_text = "1 Dia"
+        badge_text = t("comparison.one_day")
     else:
-        badge_text = f"{days_diff} Dias"
+        badge_text = t("comparison.days").format(n=days_diff)
 
     time_badge = html.Div([
-        html.Span("Dentro de ", style={"fontWeight": "400"}),
+        html.Span(t("comparison.within"), style={"fontWeight": "400"}),
         html.Span(badge_text, style={"fontWeight": "800"}),
     ], className="compare-badge")
 
@@ -188,8 +191,8 @@ def create_comparison_view(id_a=None, id_b=None):
     date_a = _format_date(m_a.measured_at).replace("\n", " ")
 
     tabs = html.Div([
-        html.Div("ANTERIOR", className="compare-tab before"),
-        html.Div("ATUAL", className="compare-tab after"),
+        html.Div(t("comparison.before"), className="compare-tab before"),
+        html.Div(t("comparison.after"), className="compare-tab after"),
     ], className="compare-tabs")
 
     # ── Table Header ──
@@ -197,7 +200,7 @@ def create_comparison_view(id_a=None, id_b=None):
         html.Div(date_b, style={
             "flex": "1", "textAlign": "center", "fontSize": "0.68rem",
             "color": "var(--text-muted)", "lineHeight": "1.3"}),
-        html.Div("MUDANÇA", style={
+        html.Div(t("comparison.change"), style={
             "flex": "1.2", "textAlign": "center", "fontSize": "0.68rem",
             "color": "var(--text-muted)", "fontWeight": "600", "textTransform": "uppercase"}),
         html.Div(date_a, style={
@@ -233,7 +236,7 @@ def create_comparison_view(id_a=None, id_b=None):
                          style={"flex": "1", "textAlign": "center"}),
                 # Center: metric name + delta
                 html.Div([
-                    html.Div(name, className="compare-metric-name"),
+                    html.Div(t(name), className="compare-metric-name"),
                     html.Div(_format_diff(diff, key), className="compare-metric-delta",
                              style={"color": dc}),
                 ], style={"flex": "1.2", "textAlign": "center"}),
@@ -243,7 +246,7 @@ def create_comparison_view(id_a=None, id_b=None):
             ], className="compare-row"))
 
         if group_rows:
-            all_items.append(html.Div(group_name.upper(), className="section-label", style={
+            all_items.append(html.Div(t(group_name).upper(), className="section-label", style={
                 "padding": "12px 16px 6px",
                 "borderTop": "1px solid var(--border-light)" if gi > 0 else "none",
                 "marginTop": "4px" if gi > 0 else "0",

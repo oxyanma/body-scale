@@ -8,9 +8,11 @@ import dash_bootstrap_components as dbc
 from database.db import SessionLocal
 from database.models import User, Measurement
 from calculations.body_composition import get_classifications, get_all_metrics
+from i18n import t
 
-MONTHS_PT = {1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho",
-             7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"}
+
+def _month_name(n):
+    return t(f"month.{n}")
 
 
 
@@ -23,10 +25,10 @@ def _bmi_position(bmi):
 
 
 def _bmi_status(bmi):
-    if bmi < 18.5: return "Abaixo do peso", "low"
-    if bmi < 25: return "Normal", "normal"
-    if bmi < 30: return "Sobrepeso", "high"
-    return "Obeso", "obese"
+    if bmi < 18.5: return t("bmi.underweight"), "low"
+    if bmi < 25: return t("bmi.normal"), "normal"
+    if bmi < 30: return t("bmi.overweight"), "high"
+    return t("bmi.obese"), "obese"
 
 
 def _status_class(color):
@@ -41,7 +43,7 @@ def create_composition_view(measurement_id=None):
     try:
         user = db.query(User).filter(User.is_active == True).first()
         if not user:
-            return html.Div("Nenhum perfil encontrado.")
+            return html.Div(t("common.no_profile"))
 
         if measurement_id:
             m = db.query(Measurement).filter(Measurement.id == int(measurement_id)).first()
@@ -59,11 +61,11 @@ def create_composition_view(measurement_id=None):
             return html.Div([
                 html.Div([
                     dcc.Link(html.Button("‹", className="back-btn"), href="/"),
-                    html.H1("Composição Corporal"),
+                    html.H1(t("composition.title")),
                 ], className="page-header"),
                 html.Div([
-                    html.P("Nenhuma medição encontrada.", style={"textAlign": "center", "padding": "40px 0", "color": "var(--text-secondary)"}),
-                    dcc.Link("← Pesar agora", href="/", style={"display": "block", "textAlign": "center", "color": "var(--blue)", "fontWeight": "600"})
+                    html.P(t("composition.no_measurement"), style={"textAlign": "center", "padding": "40px 0", "color": "var(--text-secondary)"}),
+                    dcc.Link(t("common.weigh_now"), href="/", style={"display": "block", "textAlign": "center", "color": "var(--blue)", "fontWeight": "600"})
                 ], className="health-card")
             ])
 
@@ -79,7 +81,7 @@ def create_composition_view(measurement_id=None):
         db.close()
 
     dt = m.measured_at
-    date_str = f"{dt.day:02d} de {MONTHS_PT.get(dt.month, '')} de {dt.year}, {dt.hour:02d}:{dt.minute:02d}"
+    date_str = f"{dt.day:02d} de {_month_name(dt.month)} de {dt.year}, {dt.hour:02d}:{dt.minute:02d}"
     bmi_val = m.bmi or 0
     bmi_label, bmi_class = _bmi_status(bmi_val)
     bmi_pos = _bmi_position(bmi_val)
@@ -89,7 +91,7 @@ def create_composition_view(measurement_id=None):
     header = html.Div([
         dcc.Link(html.Button("‹", className="back-btn"), href="/"),
         html.Div([
-            html.H1("Composição Corporal"),
+            html.H1(t("composition.title")),
             html.Span(date_str, className="header-subtitle"),
         ], style={"flex": "1"}),
         html.Button([
@@ -101,14 +103,14 @@ def create_composition_view(measurement_id=None):
 
     # ── Weight Card ──
     weight_card = html.Div([
-        html.Div("PESO ATUAL", style={"fontSize": "0.72rem", "fontWeight": "600", "color": "var(--text-label)", "textTransform": "uppercase", "letterSpacing": "0.08em"}),
+        html.Div(t("composition.current_weight"), style={"fontSize": "0.72rem", "fontWeight": "600", "color": "var(--text-label)", "textTransform": "uppercase", "letterSpacing": "0.08em"}),
         html.Div([
             html.Div([
                 html.Span(f"{m.weight_kg:.2f}", style={"fontFamily": "'Nunito'", "fontSize": "2.8rem", "fontWeight": "800", "color": "var(--text-primary)"}),
                 html.Span(" kg", style={"fontSize": "1rem", "color": "var(--text-muted)"}),
             ]),
             html.Div([
-                html.Div("vs. Anterior", style={"fontSize": "0.68rem", "color": "var(--text-muted)"}),
+                html.Div(t("composition.vs_previous"), style={"fontSize": "0.68rem", "color": "var(--text-muted)"}),
                 html.Div(
                     f"{'+'if delta_w and delta_w>0 else ''}{delta_w:.1f}" if delta_w and delta_w != 0 else "=",
                     style={"fontFamily": "'Nunito'", "fontSize": "1.3rem", "fontWeight": "800",
@@ -119,7 +121,7 @@ def create_composition_view(measurement_id=None):
         # BMI bar
         html.Div([
             html.Div([
-                html.Span("BAIXO"), html.Span("IDEAL"), html.Span("ALTO"), html.Span("OBESO")
+                html.Span(t("bmi.low").upper()), html.Span(t("bmi.ideal").upper()), html.Span(t("bmi.high").upper()), html.Span(t("bmi.obese_short").upper())
             ], className="bmi-labels"),
             html.Div([
                 html.Div(className="bmi-indicator", style={"left": f"{bmi_pos}%"})
@@ -133,10 +135,10 @@ def create_composition_view(measurement_id=None):
     from dashboard.layouts.metric_components import create_metric_row
     
     METRIC_GROUPS = {
-        "Resumo Geral": ["body_score", "bmi", "obesity_percent", "ideal_weight", "metabolic_age"],
-        "Índices de Gordura": ["body_fat", "fat_mass", "visceral_fat", "subcutaneous_fat"],
-        "Índices Musculares": ["muscle_mass", "muscle_mass_kg", "smm_percent", "smm", "ffmi", "smi", "lbm"],
-        "Composição e Outros": ["body_water", "water_mass", "bone_mass", "protein", "bmr", "whr", "whtr"]
+        t("composition.group_summary"): ["body_score", "bmi", "obesity_percent", "ideal_weight", "metabolic_age"],
+        t("composition.group_fat"): ["body_fat", "fat_mass", "visceral_fat", "subcutaneous_fat"],
+        t("composition.group_muscle"): ["muscle_mass", "muscle_mass_kg", "smm_percent", "smm", "ffmi", "smi", "lbm"],
+        t("composition.group_other"): ["body_water", "water_mass", "bone_mass", "protein", "bmr", "whr", "whtr"]
     }
     
     all_items = []
@@ -156,11 +158,11 @@ def create_composition_view(measurement_id=None):
     metrics_section = html.Div(all_items, className="metric-list")
 
     # ── Link to history ──
-    history_link = dcc.Link("Ver Histórico Completo", href="/historico",
+    history_link = dcc.Link(t("composition.view_history"), href="/historico",
                             className="btn-health", style={"display": "block", "textAlign": "center",
                                                            "textDecoration": "none", "marginTop": "16px"})
 
-    footnote = html.P("* Estimativas baseadas em bioimpedância elétrica (BIA)", className="footnote")
+    footnote = html.P(t("composition.footnote"), className="footnote")
 
     return html.Div([header, weight_card, metrics_section, history_link, footnote])
 

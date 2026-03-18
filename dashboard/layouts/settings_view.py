@@ -1,24 +1,25 @@
 """Settings view — Light theme, mobile-friendly."""
 from dash import html, dcc, callback, Input, Output, State, no_update
 import dash_bootstrap_components as dbc
+from i18n import t
 
 
 def create_settings_view():
     header = html.Div([
         dcc.Link(html.Button("‹", className="back-btn"), href="/"),
-        html.H1("Configurações"),
+        html.H1(t("settings.title")),
     ], className="page-header")
 
     # Data management
     data_section = html.Div([
-        html.Div("Gerenciar Dados", style={"fontFamily": "'Nunito'", "fontWeight": "800",
+        html.Div(t("settings.manage_data"), style={"fontFamily": "'Nunito'", "fontWeight": "800",
                                             "fontSize": "1rem", "color": "var(--text-primary)", "marginBottom": "12px"}),
         html.Div([
-            html.Button("📄 Exportar CSV", id="btn-export-csv", n_clicks=0,
+            html.Button(t("settings.export_csv"), id="btn-export-csv", n_clicks=0,
                         className="btn-outline-health", style={"marginBottom": "8px"}),
-            html.Button("💾 Backup SQLite", id="btn-backup-db", n_clicks=0,
+            html.Button(t("settings.backup_db"), id="btn-backup-db", n_clicks=0,
                         className="btn-outline-health", style={"marginBottom": "8px"}),
-            html.Button("🗑 Limpar Histórico", id="btn-clear-history", n_clicks=0,
+            html.Button(t("settings.clear_history"), id="btn-clear-history", n_clicks=0,
                         className="btn-outline-health", style={"marginBottom": "8px", "color": "var(--red)", "borderColor": "var(--red-light)"}),
         ]),
         html.Div(id="settings-data-alert"),
@@ -26,12 +27,11 @@ def create_settings_view():
 
     # Privacy
     privacy_section = html.Div([
-        html.Div("Privacidade", style={"fontFamily": "'Nunito'", "fontWeight": "800",
+        html.Div(t("settings.privacy"), style={"fontFamily": "'Nunito'", "fontWeight": "800",
                                         "fontSize": "1rem", "color": "var(--text-primary)", "marginBottom": "12px"}),
-        html.P("Seus dados são armazenados exclusivamente no seu computador em formato SQLite. "
-               "Nenhuma informação é enviada para servidores externos.",
+        html.P(t("settings.privacy_text"),
                style={"color": "var(--text-secondary)", "fontSize": "0.85rem", "lineHeight": "1.6"}),
-        html.Button("⚠️ Excluir Todos os Dados", id="btn-delete-all", n_clicks=0,
+        html.Button(t("settings.delete_all_btn"), id="btn-delete-all", n_clicks=0,
                     className="btn-outline-health",
                     style={"color": "var(--red)", "borderColor": "var(--red-light)", "marginTop": "8px"}),
         html.Div(id="settings-privacy-alert"),
@@ -39,29 +39,29 @@ def create_settings_view():
 
     # About
     about_section = html.Div([
-        html.Div("Sobre", style={"fontFamily": "'Nunito'", "fontWeight": "800",
+        html.Div(t("settings.about"), style={"fontFamily": "'Nunito'", "fontWeight": "800",
                                   "fontSize": "1rem", "color": "var(--text-primary)", "marginBottom": "8px"}),
         html.Div([
             html.Span("BioScale", style={"fontFamily": "'Nunito'", "fontWeight": "800", "color": "var(--blue)", "fontSize": "1.1rem"}),
             html.Span(" v2.0.0", style={"color": "var(--text-muted)", "marginLeft": "6px"}),
         ]),
-        html.P("Análise de composição corporal via bioimpedância BLE.",
+        html.P(t("settings.about_desc"),
                style={"color": "var(--text-secondary)", "fontSize": "0.82rem", "marginTop": "4px"}),
-        html.P("© 2026 — Sem login, sem anúncios, sem servidores.",
+        html.P(t("settings.about_copyright"),
                style={"color": "var(--text-muted)", "fontSize": "0.72rem", "fontStyle": "italic"}),
     ], className="health-card")
 
     # Delete-all confirmation modal
     delete_all_modal = dbc.Modal([
-        dbc.ModalHeader("⚠️ Excluir Todos os Dados", style={"color": "var(--red)"}),
+        dbc.ModalHeader(t("settings.delete_all_title"), style={"color": "var(--red)"}),
         dbc.ModalBody([
-            html.P("Tem certeza que deseja excluir TODOS os seus dados?", style={"fontWeight": "600", "color": "var(--text-primary)"}),
-            html.P("Isso inclui todos os perfis, medições e configurações. Esta ação NÃO pode ser desfeita.",
+            html.P(t("settings.delete_all_confirm"), style={"fontWeight": "600", "color": "var(--text-primary)"}),
+            html.P(t("settings.delete_all_warning"),
                    style={"color": "var(--text-secondary)", "fontSize": "0.85rem"}),
         ]),
         dbc.ModalFooter([
-            dbc.Button("Cancelar", id="btn-cancel-delete-all", className="btn-outline-health", style={"width": "auto", "marginRight": "8px"}),
-            dbc.Button("Excluir Tudo", id="btn-confirm-delete-all", className="btn-danger"),
+            dbc.Button(t("common.cancel"), id="btn-cancel-delete-all", className="btn-outline-health", style={"width": "auto", "marginRight": "8px"}),
+            dbc.Button(t("settings.delete_all_btn_confirm"), id="btn-confirm-delete-all", className="btn-danger"),
         ]),
     ], id="modal-delete-all", is_open=False)
 
@@ -91,7 +91,7 @@ def handle_data_actions(csv_clicks, backup_clicks, clear_clicks):
             try:
                 user = db.query(User).filter(User.is_active == True).first()
                 if not user:
-                    return html.Div("Nenhum perfil ativo.", className="alert-health alert-info")
+                    return html.Div(t("settings.no_active_profile"), className="alert-health alert-info")
 
                 measurements = db.query(Measurement).filter(
                     Measurement.user_id == user.id
@@ -102,8 +102,8 @@ def handle_data_actions(csv_clicks, backup_clicks, clear_clicks):
 
                 with open(filepath, 'w', newline='') as f:
                     writer = csv.writer(f)
-                    writer.writerow(["Data", "Peso (kg)", "IMC", "Gordura (%)", "Músculo (%)",
-                                    "Água (%)", "Visceral", "Metab. Age", "TMB", "Proteína (%)"])
+                    writer.writerow([t("csv.date"), t("csv.weight"), t("csv.bmi"), t("csv.fat"), t("csv.muscle"),
+                                    t("csv.water"), t("csv.visceral"), t("csv.metabolic_age"), t("csv.bmr"), t("csv.protein")])
                     for m in measurements:
                         writer.writerow([
                             m.measured_at.strftime("%d/%m/%Y %H:%M") if m.measured_at else "",
@@ -114,9 +114,9 @@ def handle_data_actions(csv_clicks, backup_clicks, clear_clicks):
             finally:
                 db.close()
 
-            return html.Div(f"✓ CSV exportado para: {filepath}", className="alert-health alert-success")
+            return html.Div(t("settings.csv_exported").format(path=filepath), className="alert-health alert-success")
         except Exception as e:
-            return html.Div(f"Erro: {e}", className="alert-health alert-danger")
+            return html.Div(f"{t('common.error')}: {e}", className="alert-health alert-danger")
 
     elif ctx.triggered_id == "btn-backup-db":
         try:
@@ -125,9 +125,9 @@ def handle_data_actions(csv_clicks, backup_clicks, clear_clicks):
             src = Path.home() / ".bioscale" / "bioscale.db"
             dst = Path.home() / "Desktop" / "bioscale_backup.db"
             shutil.copy2(src, dst)
-            return html.Div(f"✓ Backup salvo em: {dst}", className="alert-health alert-success")
+            return html.Div(t("settings.backup_saved").format(path=dst), className="alert-health alert-success")
         except Exception as e:
-            return html.Div(f"Erro: {e}", className="alert-health alert-danger")
+            return html.Div(f"{t('common.error')}: {e}", className="alert-health alert-danger")
 
     elif ctx.triggered_id == "btn-clear-history":
         try:
@@ -139,11 +139,11 @@ def handle_data_actions(csv_clicks, backup_clicks, clear_clicks):
                 if user:
                     db.query(Measurement).filter(Measurement.user_id == user.id).delete()
                     db.commit()
-                    return html.Div("✓ Histórico limpo.", className="alert-health alert-info")
+                    return html.Div(t("settings.history_cleared"), className="alert-health alert-info")
             finally:
                 db.close()
         except Exception as e:
-            return html.Div(f"Erro: {e}", className="alert-health alert-danger")
+            return html.Div(f"{t('common.error')}: {e}", className="alert-health alert-danger")
 
     return no_update
 
@@ -180,9 +180,9 @@ def handle_delete_all(n):
             db.query(Goal).delete()
             db.query(User).delete()
             db.commit()
-            return html.Div("✓ Todos os dados foram excluídos.", className="alert-health alert-danger")
+            return html.Div(t("settings.all_deleted"), className="alert-health alert-danger")
         finally:
             db.close()
     except Exception as e:
-        return html.Div(f"Erro: {e}", className="alert-health alert-danger")
+        return html.Div(f"{t('common.error')}: {e}", className="alert-health alert-danger")
 
