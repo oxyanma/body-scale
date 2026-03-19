@@ -116,7 +116,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await db.setActiveUser(_selectedUserId!);
 
     if (mounted) {
-      context.go('/');
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/');
+      }
     }
   }
 
