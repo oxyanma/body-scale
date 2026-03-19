@@ -150,7 +150,8 @@ class _MetricRowState extends State<MetricRow> {
     final max = c.bounds.last + boundsRange * 0.3;
     final range = max - min;
 
-    final pos = ((c.value - min) / range).clamp(0.0, 1.0);
+    final barVal = c.barValue ?? c.value;
+    final pos = ((barVal - min) / range).clamp(0.0, 1.0);
 
     // Calculate zone edges: [min, b0, b1, b2, max]
     final edges = [min, ...c.bounds, max];

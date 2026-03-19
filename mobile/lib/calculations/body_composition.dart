@@ -407,6 +407,7 @@ class ClassificationResult {
   final List<String> zoneColors;
   final String desc;
   final String category;
+  final double? barValue;
 
   const ClassificationResult({
     required this.value,
@@ -418,6 +419,7 @@ class ClassificationResult {
     this.zoneColors = const ['info', 'success', 'warning', 'danger'],
     required this.desc,
     required this.category,
+    this.barValue,
   });
 
   Map<String, dynamic> toMap() => {
@@ -430,6 +432,7 @@ class ClassificationResult {
         'zoneColors': zoneColors,
         'desc': desc,
         'category': category,
+        'barValue': barValue,
       };
 }
 
@@ -795,7 +798,7 @@ Map<String, ClassificationResult> getClassifications(
     final iw = (metrics['ideal_weight_kg'] as num).toDouble();
     final diff = w - iw;
     final bounds = [iw - 5.0, iw, iw + 5.0];
-    final iwZoneColors = ['warning', 'success', 'info', 'warning'];
+    final iwZoneColors = ['info', 'success', 'warning', 'danger'];
     String label;
     String color;
     if (diff.abs() < 3) {
@@ -825,6 +828,7 @@ Map<String, ClassificationResult> getClassifications(
       value: iw, unit: 'kg', name: t('metric.ideal_weight'),
       label: label, color: color, bounds: bounds, zoneColors: iwZoneColors,
       desc: desc, category: 'health',
+      barValue: w,
     );
   }
 
