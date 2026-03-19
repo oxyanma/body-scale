@@ -1,5 +1,10 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../theme/app_theme.dart';
 import '../services/i18n_service.dart';
 import '../database/database_helper.dart';
@@ -17,6 +22,7 @@ class CompositionScreen extends StatefulWidget {
 }
 
 class _CompositionScreenState extends State<CompositionScreen> {
+  final _screenshotController = ScreenshotController();
   Map<String, dynamic>? _user;
   Map<String, dynamic>? _measurement;
   Map<String, dynamic>? _prevMeasurement;
@@ -158,6 +164,13 @@ class _CompositionScreenState extends State<CompositionScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: _buildHeader(),
               ),
+              Screenshot(
+                controller: _screenshotController,
+                child: Container(
+                  color: AppColors.bgMain,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: WeightHeroCard(
@@ -222,7 +235,22 @@ class _CompositionScreenState extends State<CompositionScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  I18nService.t('composition.footnote'),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textMuted,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+                    ],
+                  ),
+                ),
+              ), // end Screenshot
+              const SizedBox(height: 8),
               // History link
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -245,17 +273,7 @@ class _CompositionScreenState extends State<CompositionScreen> {
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  I18nService.t('composition.footnote'),
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textMuted,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
+              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -263,12 +281,39 @@ class _CompositionScreenState extends State<CompositionScreen> {
     );
   }
 
+  Future<void> _shareAsImage() async {
+    try {
+      final Uint8List? imageBytes = await _screenshotController.capture(
+        delay: const Duration(milliseconds: 100),
+        pixelRatio: 2.0,
+      );
+      if (imageBytes == null) return;
+
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/bioscale_composition.png');
+      await file.writeAsBytes(imageBytes);
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'BioScale - ${I18nService.t('composition.title')}',
+      );
+    } catch (e) {
+      debugPrint('Share error: $e');
+    }
+  }
+
   Widget _buildHeader() {
     return Row(
       children: [
         IconButton(
           icon: const Icon(Icons.arrow_back_ios, size: 20),
-          onPressed: () => context.go('/'),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/');
+            }
+          },
           color: AppColors.textPrimary,
         ),
         Expanded(
@@ -294,6 +339,12 @@ class _CompositionScreenState extends State<CompositionScreen> {
             ],
           ),
         ),
+        if (_measurement != null)
+          IconButton(
+            icon: const Icon(Icons.share_outlined, size: 22),
+            onPressed: _shareAsImage,
+            color: AppColors.blue,
+          ),
       ],
     );
   }

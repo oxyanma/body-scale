@@ -31,7 +31,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_back_ios, size: 20),
-                    onPressed: () => context.go('/'),
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/');
+                      }
+                    },
                     color: AppColors.textPrimary,
                   ),
                   Text(

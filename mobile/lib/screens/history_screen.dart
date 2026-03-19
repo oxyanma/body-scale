@@ -1,6 +1,11 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../theme/app_theme.dart';
 import '../services/i18n_service.dart';
 import '../database/database_helper.dart';
@@ -13,6 +18,7 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
+  final _screenshotController = ScreenshotController();
   List<Map<String, dynamic>> _measurements = [];
   Map<String, dynamic>? _user;
   bool _loading = true;
@@ -58,17 +64,48 @@ class _HistoryScreenState extends State<HistoryScreen> {
               _buildHeader(),
               if (_measurements.isEmpty)
                 _buildEmpty()
-              else ...[
-                _buildTrendCard(),
-                _buildCompareBar(),
-                _buildRecords(),
-              ],
-              const SizedBox(height: 24),
+              else
+                Screenshot(
+                  controller: _screenshotController,
+                  child: Container(
+                    color: AppColors.bgMain,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTrendCard(),
+                        _buildCompareBar(),
+                        _buildRecords(),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _shareAsImage() async {
+    try {
+      final Uint8List? imageBytes = await _screenshotController.capture(
+        delay: const Duration(milliseconds: 100),
+        pixelRatio: 2.0,
+      );
+      if (imageBytes == null) return;
+
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/bioscale_history.png');
+      await file.writeAsBytes(imageBytes);
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'BioScale - ${I18nService.t('history.title')}',
+      );
+    } catch (e) {
+      debugPrint('Share error: $e');
+    }
   }
 
   Widget _buildHeader() {
@@ -78,7 +115,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back_ios, size: 20),
-            onPressed: () => context.go('/'),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/');
+              }
+            },
             color: AppColors.textPrimary,
           ),
           Expanded(
@@ -91,6 +134,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
             ),
           ),
+          if (_measurements.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.share_outlined, size: 22),
+              onPressed: _shareAsImage,
+              color: AppColors.blue,
+            ),
         ],
       ),
     );

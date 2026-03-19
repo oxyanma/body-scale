@@ -1,5 +1,10 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../theme/app_theme.dart';
 import '../services/i18n_service.dart';
 import '../database/database_helper.dart';
@@ -16,6 +21,7 @@ class ComparisonScreen extends StatefulWidget {
 }
 
 class _ComparisonScreenState extends State<ComparisonScreen> {
+  final _screenshotController = ScreenshotController();
   bool _loading = true;
   Map<String, dynamic>? _mA; // newer
   Map<String, dynamic>? _mB; // older
@@ -103,7 +109,9 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
         activityLevel: activity, waistCm: waist, hipCm: hip,
       );
       classA = getClassifications(metricsA, sex, age, height);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('ComparisonScreen: metrics A error: $e');
+    }
 
     try {
       final metricsB = getAllMetrics(
@@ -112,7 +120,9 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
         activityLevel: activity, waistCm: waist, hipCm: hip,
       );
       classB = getClassifications(metricsB, sex, age, height);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('ComparisonScreen: metrics B error: $e');
+    }
 
     setState(() {
       _mA = mA;
@@ -151,7 +161,13 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                       ),
                       const SizedBox(height: 16),
                       TextButton(
-                        onPressed: () => context.push('/history'),
+                        onPressed: () {
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go('/');
+                          }
+                        },
                         child: Text(
                           I18nService.t('comparison.back_history'),
                           style: const TextStyle(color: AppColors.blue, fontWeight: FontWeight.w600),
@@ -196,6 +212,12 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
           child: Column(
             children: [
               _buildHeader(),
+              Screenshot(
+                controller: _screenshotController,
+                child: Container(
+                  color: AppColors.bgMain,
+                  child: Column(
+                    children: [
               // Main card
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -295,11 +317,36 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                 ),
               ),
               const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _shareAsImage() async {
+    try {
+      final Uint8List? imageBytes = await _screenshotController.capture(
+        delay: const Duration(milliseconds: 100),
+        pixelRatio: 2.0,
+      );
+      if (imageBytes == null) return;
+
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/bioscale_comparison.png');
+      await file.writeAsBytes(imageBytes);
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'BioScale - ${I18nService.t('comparison.title')}',
+      );
+    } catch (e) {
+      debugPrint('Share error: $e');
+    }
   }
 
   Widget _buildHeader() {
@@ -309,17 +356,31 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back_ios, size: 20),
-            onPressed: () => context.push('/history'),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/');
+              }
+            },
             color: AppColors.textPrimary,
           ),
-          Text(
-            I18nService.t('comparison.title'),
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+          Expanded(
+            child: Text(
+              I18nService.t('comparison.title'),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
+          if (_mA != null && _mB != null)
+            IconButton(
+              icon: const Icon(Icons.share_outlined, size: 22),
+              onPressed: _shareAsImage,
+              color: AppColors.blue,
+            ),
         ],
       ),
     );

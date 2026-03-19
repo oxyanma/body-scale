@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import '../services/i18n_service.dart';
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -460,23 +462,20 @@ Map<String, ClassificationResult> getClassifications(
   double heightCm,
 ) {
   final cls = <String, ClassificationResult>{};
+  final w = (metrics['weight_kg'] as num).toDouble();
+  final t = I18nService.t;
 
   // ---- BMI ----
   {
     final val = (metrics['bmi'] as num).toDouble();
     final bounds = [18.5, 25.0, 30.0];
-    final labels = ['Underweight', 'Normal', 'Overweight', 'Obese'];
-    final colors = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c'];
+    final labels = [t('zone.bmi.1'), t('zone.bmi.2'), t('zone.bmi.3'), t('zone.bmi.4')];
+    final colors = ['info', 'success', 'warning', 'danger'];
     final (label, color, _) = _getClassification(val, bounds, labels, colors);
     cls['bmi'] = ClassificationResult(
-      value: val,
-      unit: 'kg/m²',
-      name: 'BMI',
-      label: label,
-      color: color,
-      bounds: bounds,
-      desc: 'Body Mass Index',
-      category: 'composition',
+      value: val, unit: 'kg/m²', name: t('metric.bmi'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.bmi'), category: 'composition',
     );
   }
 
@@ -486,57 +485,186 @@ Map<String, ClassificationResult> getClassifications(
     List<double> bounds;
     if (sex == 'M') {
       if (age < 40) {
-        bounds = [8.0, 20.0, 25.0];
+        bounds = [10.0, 21.0, 26.0];
       } else if (age < 60) {
-        bounds = [11.0, 22.0, 28.0];
+        bounds = [11.0, 22.0, 27.0];
       } else {
-        bounds = [13.0, 25.0, 30.0];
+        bounds = [13.0, 24.0, 29.0];
       }
     } else {
       if (age < 40) {
-        bounds = [21.0, 33.0, 39.0];
+        bounds = [20.0, 33.0, 39.0];
       } else if (age < 60) {
         bounds = [23.0, 34.0, 40.0];
       } else {
         bounds = [24.0, 36.0, 42.0];
       }
     }
-    final labels = ['Low', 'Normal', 'High', 'Very High'];
-    final colors = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c'];
+    final labels = [t('zone.body_fat.1'), t('zone.body_fat.2'), t('zone.body_fat.3'), t('zone.body_fat.4')];
+    final colors = ['info', 'success', 'warning', 'danger'];
     final (label, color, _) = _getClassification(val, bounds, labels, colors);
-    cls['body_fat_percent'] = ClassificationResult(
-      value: val,
-      unit: '%',
-      name: 'Body Fat',
-      label: label,
-      color: color,
-      bounds: bounds,
-      desc: 'Body fat percentage',
-      category: 'composition',
+    cls['body_fat'] = ClassificationResult(
+      value: val, unit: '%', name: t('metric.body_fat'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.body_fat'), category: 'composition',
+    );
+  }
+
+  // ---- Fat Mass (kg) ----
+  {
+    final val = (metrics['fat_mass_kg'] as num).toDouble();
+    List<double> bfBounds;
+    if (sex == 'M') {
+      if (age < 40) { bfBounds = [10.0, 21.0, 26.0]; }
+      else if (age < 60) { bfBounds = [11.0, 22.0, 27.0]; }
+      else { bfBounds = [13.0, 24.0, 29.0]; }
+    } else {
+      if (age < 40) { bfBounds = [20.0, 33.0, 39.0]; }
+      else if (age < 60) { bfBounds = [23.0, 34.0, 40.0]; }
+      else { bfBounds = [24.0, 36.0, 42.0]; }
+    }
+    final bounds = bfBounds.map((b) => _r(w * b / 100.0, 1)).toList();
+    final labels = [t('zone.fat_mass.1'), t('zone.fat_mass.2'), t('zone.fat_mass.3'), t('zone.fat_mass.4')];
+    final colors = ['info', 'success', 'warning', 'danger'];
+    final (label, color, _) = _getClassification(val, bounds, labels, colors);
+    cls['fat_mass'] = ClassificationResult(
+      value: val, unit: 'kg', name: t('metric.fat_mass'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.fat_mass'), category: 'composition',
+    );
+  }
+
+  // ---- Subcutaneous Fat (kg) ----
+  {
+    final val = (metrics['subcutaneous_fat_kg'] as num).toDouble();
+    List<double> bfBounds;
+    if (sex == 'M') {
+      if (age < 40) { bfBounds = [10.0, 21.0, 26.0]; }
+      else if (age < 60) { bfBounds = [11.0, 22.0, 27.0]; }
+      else { bfBounds = [13.0, 24.0, 29.0]; }
+    } else {
+      if (age < 40) { bfBounds = [20.0, 33.0, 39.0]; }
+      else if (age < 60) { bfBounds = [23.0, 34.0, 40.0]; }
+      else { bfBounds = [24.0, 36.0, 42.0]; }
+    }
+    final bounds = bfBounds.map((b) => _r(w * b / 100.0 * 0.80, 1)).toList();
+    final labels = [t('zone.subcutaneous_fat.1'), t('zone.subcutaneous_fat.2'), t('zone.subcutaneous_fat.3'), t('zone.subcutaneous_fat.4')];
+    final colors = ['success', 'warning', 'danger', 'danger'];
+    final (label, color, _) = _getClassification(val, bounds, labels, colors);
+    cls['subcutaneous_fat'] = ClassificationResult(
+      value: val, unit: 'kg', name: t('metric.subcutaneous_fat'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.subcutaneous_fat'), category: 'composition',
+    );
+  }
+
+  // ---- Visceral Fat ----
+  {
+    final val = (metrics['visceral_fat'] as num).toDouble();
+    final bounds = [9.0, 14.0, 15.0];
+    final labels = [t('zone.visceral_fat.1'), t('zone.visceral_fat.2'), t('zone.visceral_fat.3'), t('zone.visceral_fat.4')];
+    final colors = ['success', 'warning', 'danger', 'danger'];
+    final (label, color, _) = _getClassification(val, bounds, labels, colors);
+    cls['visceral_fat'] = ClassificationResult(
+      value: val, unit: '', name: t('metric.visceral_fat'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.visceral_fat'), category: 'health',
     );
   }
 
   // ---- Muscle Mass % ----
   {
+    final val = (metrics['muscle_mass_percent'] as num).toDouble();
+    List<double> bounds;
+    if (sex == 'M') {
+      bounds = [65.0, 75.0, 85.0];
+    } else {
+      bounds = [60.0, 70.0, 80.0];
+    }
+    final labels = [t('zone.muscle_mass.1'), t('zone.muscle_mass.2'), t('zone.muscle_mass.3'), t('zone.muscle_mass.4')];
+    final colors = ['warning', 'success', 'primary', 'info'];
+    final (label, color, _) = _getClassification(val, bounds, labels, colors);
+    cls['muscle_mass'] = ClassificationResult(
+      value: val, unit: '%', name: t('metric.muscle_mass'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.muscle_mass'), category: 'composition',
+    );
+  }
+
+  // ---- Muscle Mass (kg) ----
+  {
+    final val = (metrics['muscle_mass_kg'] as num).toDouble();
+    List<double> mBounds;
+    if (sex == 'M') {
+      mBounds = [65.0, 75.0, 85.0];
+    } else {
+      mBounds = [60.0, 70.0, 80.0];
+    }
+    final bounds = mBounds.map((b) => _r(w * b / 100.0, 1)).toList();
+    final labels = [t('zone.muscle_mass_kg.1'), t('zone.muscle_mass_kg.2'), t('zone.muscle_mass_kg.3'), t('zone.muscle_mass_kg.4')];
+    final colors = ['warning', 'success', 'primary', 'info'];
+    final (label, color, _) = _getClassification(val, bounds, labels, colors);
+    cls['muscle_mass_kg'] = ClassificationResult(
+      value: val, unit: 'kg', name: t('metric.muscle_mass_kg'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.muscle_mass_kg'), category: 'composition',
+    );
+  }
+
+  // ---- SMM % (Skeletal Muscle Mass %) ----
+  {
     final val = (metrics['smm_percent'] as num).toDouble();
     List<double> bounds;
     if (sex == 'M') {
-      bounds = [33.0, 39.0, 44.0];
+      bounds = [33.0, 40.0, 50.0];
     } else {
-      bounds = [24.0, 30.0, 35.0];
+      bounds = [24.0, 31.0, 40.0];
     }
-    final labels = ['Low', 'Normal', 'High', 'Very High'];
-    final colors = ['#e74c3c', '#2ecc71', '#3498db', '#9b59b6'];
+    final labels = [t('zone.smm_percent.1'), t('zone.smm_percent.2'), t('zone.smm_percent.3'), t('zone.smm_percent.4')];
+    final colors = ['warning', 'success', 'primary', 'info'];
     final (label, color, _) = _getClassification(val, bounds, labels, colors);
     cls['smm_percent'] = ClassificationResult(
-      value: val,
-      unit: '%',
-      name: 'Muscle Mass',
-      label: label,
-      color: color,
-      bounds: bounds,
-      desc: 'Skeletal muscle mass percentage',
-      category: 'composition',
+      value: val, unit: '%', name: t('metric.smm_percent'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.smm_percent'), category: 'composition',
+    );
+  }
+
+  // ---- SMM (kg) ----
+  {
+    final val = (metrics['smm_kg'] as num).toDouble();
+    List<double> bounds;
+    if (sex == 'M') {
+      bounds = [20.0, 28.0, 38.0];
+    } else {
+      bounds = [14.0, 20.0, 28.0];
+    }
+    final labels = [t('zone.smm.1'), t('zone.smm.2'), t('zone.smm.3'), t('zone.smm.4')];
+    final colors = ['warning', 'success', 'primary', 'info'];
+    final (label, color, _) = _getClassification(val, bounds, labels, colors);
+    cls['smm'] = ClassificationResult(
+      value: val, unit: 'kg', name: t('metric.smm'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.smm'), category: 'composition',
+    );
+  }
+
+  // ---- LBM (kg) ----
+  {
+    final val = (metrics['lbm_kg'] as num).toDouble();
+    List<double> bounds;
+    if (sex == 'M') {
+      bounds = [w * 0.65, w * 0.75, w * 0.85];
+    } else {
+      bounds = [w * 0.60, w * 0.70, w * 0.80];
+    }
+    final labels = [t('zone.lbm.1'), t('zone.lbm.2'), t('zone.lbm.3'), t('zone.lbm.4')];
+    final colors = ['warning', 'success', 'primary', 'info'];
+    final (label, color, _) = _getClassification(val, bounds, labels, colors);
+    cls['lbm'] = ClassificationResult(
+      value: val, unit: 'kg', name: t('metric.lbm'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.lbm'), category: 'composition',
     );
   }
 
@@ -545,22 +673,37 @@ Map<String, ClassificationResult> getClassifications(
     final val = (metrics['body_water_percent'] as num).toDouble();
     List<double> bounds;
     if (sex == 'M') {
-      bounds = [50.0, 55.0, 65.0];
+      bounds = [50.0, 65.0, 80.0];
     } else {
-      bounds = [45.0, 50.0, 60.0];
+      bounds = [45.0, 60.0, 80.0];
     }
-    final labels = ['Low', 'Normal', 'High', 'Very High'];
-    final colors = ['#e74c3c', '#2ecc71', '#3498db', '#9b59b6'];
+    final labels = [t('zone.body_water.1'), t('zone.body_water.2'), t('zone.body_water.3'), t('zone.body_water.4')];
+    final colors = ['info', 'success', 'warning', 'danger'];
     final (label, color, _) = _getClassification(val, bounds, labels, colors);
-    cls['body_water_percent'] = ClassificationResult(
-      value: val,
-      unit: '%',
-      name: 'Body Water',
-      label: label,
-      color: color,
-      bounds: bounds,
-      desc: 'Total body water percentage',
-      category: 'composition',
+    cls['body_water'] = ClassificationResult(
+      value: val, unit: '%', name: t('metric.body_water'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.body_water'), category: 'composition',
+    );
+  }
+
+  // ---- Water Mass (kg) ----
+  {
+    final val = (metrics['water_mass_kg'] as num).toDouble();
+    List<double> wBounds;
+    if (sex == 'M') {
+      wBounds = [50.0, 65.0, 80.0];
+    } else {
+      wBounds = [45.0, 60.0, 80.0];
+    }
+    final bounds = wBounds.map((b) => _r(w * b / 100.0, 1)).toList();
+    final labels = [t('zone.water_mass.1'), t('zone.water_mass.2'), t('zone.water_mass.3'), t('zone.water_mass.4')];
+    final colors = ['info', 'success', 'warning', 'danger'];
+    final (label, color, _) = _getClassification(val, bounds, labels, colors);
+    cls['water_mass'] = ClassificationResult(
+      value: val, unit: 'kg', name: t('metric.water_mass'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.water_mass'), category: 'composition',
     );
   }
 
@@ -569,79 +712,50 @@ Map<String, ClassificationResult> getClassifications(
     final val = (metrics['bone_mass_kg'] as num).toDouble();
     List<double> bounds;
     if (sex == 'M') {
-      bounds = [2.0, 2.6, 3.5];
+      bounds = [2.5, 3.2, 4.5];
     } else {
-      bounds = [1.5, 2.0, 2.8];
+      bounds = [1.8, 2.5, 3.5];
     }
-    final labels = ['Low', 'Normal', 'High', 'Very High'];
-    final colors = ['#e74c3c', '#2ecc71', '#3498db', '#9b59b6'];
+    final labels = [t('zone.bone_mass.1'), t('zone.bone_mass.2'), t('zone.bone_mass.3'), t('zone.bone_mass.4')];
+    final colors = ['warning', 'success', 'primary', 'info'];
     final (label, color, _) = _getClassification(val, bounds, labels, colors);
-    cls['bone_mass_kg'] = ClassificationResult(
-      value: val,
-      unit: 'kg',
-      name: 'Bone Mass',
-      label: label,
-      color: color,
-      bounds: bounds,
-      desc: 'Estimated bone mass',
-      category: 'composition',
-    );
-  }
-
-  // ---- Visceral Fat ----
-  {
-    final val = (metrics['visceral_fat'] as num).toDouble();
-    final bounds = [9.0, 14.0, 17.0];
-    final labels = ['Normal', 'High', 'Very High', 'Excessive'];
-    final colors = ['#2ecc71', '#f39c12', '#e74c3c', '#c0392b'];
-    final (label, color, _) = _getClassification(val, bounds, labels, colors);
-    cls['visceral_fat'] = ClassificationResult(
-      value: val,
-      unit: '',
-      name: 'Visceral Fat',
-      label: label,
-      color: color,
-      bounds: bounds,
-      desc: 'Visceral fat rating',
-      category: 'health',
-    );
-  }
-
-  // ---- BMR ----
-  {
-    final val = (metrics['bmr'] as num).toDouble();
-    final bounds = [1200.0, 1600.0, 2200.0];
-    final labels = ['Low', 'Normal', 'High', 'Very High'];
-    final colors = ['#e74c3c', '#2ecc71', '#3498db', '#9b59b6'];
-    final (label, color, _) = _getClassification(val, bounds, labels, colors);
-    cls['bmr'] = ClassificationResult(
-      value: val,
-      unit: 'kcal',
-      name: 'BMR',
-      label: label,
-      color: color,
-      bounds: bounds,
-      desc: 'Basal Metabolic Rate',
-      category: 'metabolic',
+    cls['bone_mass'] = ClassificationResult(
+      value: val, unit: 'kg', name: t('metric.bone_mass'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.bone_mass'), category: 'composition',
     );
   }
 
   // ---- Protein % ----
   {
     final val = (metrics['protein_percent'] as num).toDouble();
-    final bounds = [10.0, 16.0, 20.0];
-    final labels = ['Low', 'Normal', 'High', 'Very High'];
-    final colors = ['#e74c3c', '#2ecc71', '#3498db', '#9b59b6'];
+    final bounds = [16.0, 20.0, 24.0];
+    final labels = [t('zone.protein.1'), t('zone.protein.2'), t('zone.protein.3'), t('zone.protein.4')];
+    final colors = ['warning', 'success', 'primary', 'info'];
     final (label, color, _) = _getClassification(val, bounds, labels, colors);
-    cls['protein_percent'] = ClassificationResult(
-      value: val,
-      unit: '%',
-      name: 'Protein',
-      label: label,
-      color: color,
-      bounds: bounds,
-      desc: 'Estimated protein percentage',
-      category: 'composition',
+    cls['protein'] = ClassificationResult(
+      value: val, unit: '%', name: t('metric.protein'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.protein'), category: 'composition',
+    );
+  }
+
+  // ---- BMR ----
+  {
+    final val = (metrics['bmr'] as num).toDouble();
+    List<double> bounds;
+    if (sex == 'M') {
+      bounds = [1400.0, 1700.0, 2400.0];
+    } else {
+      bounds = [1200.0, 1500.0, 2000.0];
+    }
+    final labels = [t('zone.bmr.1'), t('zone.bmr.2'), t('zone.bmr.3'), t('zone.bmr.4')];
+    final colors = ['warning', 'success', 'primary', 'info'];
+    final (label, color, _) = _getClassification(val, bounds, labels, colors);
+    cls['bmr'] = ClassificationResult(
+      value: val, unit: 'kcal', name: t('metric.bmr'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.bmr'), category: 'metabolic',
     );
   }
 
@@ -649,18 +763,13 @@ Map<String, ClassificationResult> getClassifications(
   {
     final val = (metrics['obesity_percent'] as num).toDouble();
     final bounds = [-10.0, 10.0, 20.0];
-    final labels = ['Underweight', 'Normal', 'Overweight', 'Obese'];
-    final colors = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c'];
+    final labels = [t('zone.obesity_percent.1'), t('zone.obesity_percent.2'), t('zone.obesity_percent.3'), t('zone.obesity_percent.4')];
+    final colors = ['info', 'success', 'warning', 'danger'];
     final (label, color, _) = _getClassification(val, bounds, labels, colors);
     cls['obesity_percent'] = ClassificationResult(
-      value: val,
-      unit: '%',
-      name: 'Obesity',
-      label: label,
-      color: color,
-      bounds: bounds,
-      desc: 'Obesity percentage relative to ideal weight',
-      category: 'health',
+      value: val, unit: '%', name: t('metric.obesity_percent'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.obesity_percent'), category: 'health',
     );
   }
 
@@ -668,42 +777,38 @@ Map<String, ClassificationResult> getClassifications(
   {
     final val = (metrics['body_score'] as num).toDouble();
     final bounds = [40.0, 60.0, 80.0];
-    final labels = ['Poor', 'Fair', 'Good', 'Excellent'];
-    final colors = ['#e74c3c', '#f39c12', '#2ecc71', '#3498db'];
+    final labels = [t('zone.body_score.1'), t('zone.body_score.2'), t('zone.body_score.3'), t('zone.body_score.4')];
+    final colors = ['danger', 'warning', 'success', 'primary'];
     final (label, color, _) = _getClassification(val, bounds, labels, colors);
     cls['body_score'] = ClassificationResult(
-      value: val,
-      unit: '',
-      name: 'Body Score',
-      label: label,
-      color: color,
-      bounds: bounds,
-      desc: 'Overall body composition score',
-      category: 'health',
+      value: val, unit: '/100', name: t('metric.body_score'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.body_score'), category: 'health',
     );
   }
 
-  // ---- FFMI ----
-  if (metrics['ffmi'] != null) {
-    final val = (metrics['ffmi'] as num).toDouble();
-    List<double> bounds;
-    if (sex == 'M') {
-      bounds = [17.0, 20.0, 23.0];
+  // ---- Ideal Weight ----
+  {
+    final iw = (metrics['ideal_weight_kg'] as num).toDouble();
+    final diff = w - iw;
+    final bounds = [iw - 5.0, iw, iw + 5.0];
+    String label;
+    String color;
+    if (diff.abs() < 3) {
+      label = t('zone.ideal_weight.2');
+      color = 'success';
+    } else if (diff.abs() < 8) {
+      label = t('zone.ideal_weight.3');
+      color = 'primary';
     } else {
-      bounds = [14.0, 17.0, 20.0];
+      label = t('zone.ideal_weight.4');
+      color = 'warning';
     }
-    final labels = ['Below Average', 'Average', 'Above Average', 'Excellent'];
-    final colors = ['#e74c3c', '#2ecc71', '#3498db', '#9b59b6'];
-    final (label, color, _) = _getClassification(val, bounds, labels, colors);
-    cls['ffmi'] = ClassificationResult(
-      value: val,
-      unit: 'kg/m²',
-      name: 'FFMI',
-      label: label,
-      color: color,
-      bounds: bounds,
-      desc: 'Fat-Free Mass Index',
-      category: 'composition',
+    final desc = t('desc.ideal_weight').replaceAll('{diff}', diff.toStringAsFixed(1));
+    cls['ideal_weight'] = ClassificationResult(
+      value: iw, unit: 'kg', name: t('metric.ideal_weight'),
+      label: label, color: color, bounds: bounds,
+      desc: desc, category: 'health',
     );
   }
 
@@ -712,61 +817,32 @@ Map<String, ClassificationResult> getClassifications(
     final val = (metrics['metabolic_age'] as num).toDouble();
     final ageDbl = age.toDouble();
     final bounds = [ageDbl - 5, ageDbl, ageDbl + 5];
-    final labels = ['Younger', 'Normal', 'Older', 'Much Older'];
-    final colors = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c'];
+    final labels = [t('zone.metabolic_age.1'), t('zone.metabolic_age.2'), t('zone.metabolic_age.3'), t('zone.metabolic_age.4')];
+    final colors = ['primary', 'success', 'warning', 'danger'];
     final (label, color, _) = _getClassification(val, bounds, labels, colors);
     cls['metabolic_age'] = ClassificationResult(
-      value: val,
-      unit: 'years',
-      name: 'Metabolic Age',
-      label: label,
-      color: color,
-      bounds: bounds,
-      desc: 'Estimated metabolic age',
-      category: 'metabolic',
+      value: val, unit: t('common.years'), name: t('metric.metabolic_age'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.metabolic_age'), category: 'metabolic',
     );
   }
 
-  // ---- WHR ----
-  if (metrics['whr'] != null) {
-    final val = (metrics['whr'] as num).toDouble();
+  // ---- FFMI ----
+  if (metrics['ffmi'] != null) {
+    final val = (metrics['ffmi'] as num).toDouble();
     List<double> bounds;
     if (sex == 'M') {
-      bounds = [0.85, 0.90, 1.00];
+      bounds = [17.0, 20.0, 25.0];
     } else {
-      bounds = [0.75, 0.80, 0.86];
+      bounds = [14.0, 17.0, 21.0];
     }
-    final labels = ['Low', 'Normal', 'High', 'Very High'];
-    final colors = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c'];
+    final labels = [t('zone.ffmi.1'), t('zone.ffmi.2'), t('zone.ffmi.3'), t('zone.ffmi.4')];
+    final colors = ['warning', 'success', 'primary', 'info'];
     final (label, color, _) = _getClassification(val, bounds, labels, colors);
-    cls['whr'] = ClassificationResult(
-      value: val,
-      unit: '',
-      name: 'Waist-to-Hip Ratio',
-      label: label,
-      color: color,
-      bounds: bounds,
-      desc: 'Waist-to-hip ratio',
-      category: 'health',
-    );
-  }
-
-  // ---- WHtR ----
-  if (metrics['whtr'] != null) {
-    final val = (metrics['whtr'] as num).toDouble();
-    final bounds = [0.40, 0.50, 0.60];
-    final labels = ['Slim', 'Healthy', 'Overweight', 'Obese'];
-    final colors = ['#3498db', '#2ecc71', '#f39c12', '#e74c3c'];
-    final (label, color, _) = _getClassification(val, bounds, labels, colors);
-    cls['whtr'] = ClassificationResult(
-      value: val,
-      unit: '',
-      name: 'Waist-to-Height Ratio',
-      label: label,
-      color: color,
-      bounds: bounds,
-      desc: 'Waist-to-height ratio',
-      category: 'health',
+    cls['ffmi'] = ClassificationResult(
+      value: val, unit: 'kg/m²', name: t('metric.ffmi'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.ffmi'), category: 'composition',
     );
   }
 
@@ -777,20 +853,48 @@ Map<String, ClassificationResult> getClassifications(
     if (sex == 'M') {
       bounds = [7.0, 8.5, 10.5];
     } else {
-      bounds = [5.5, 6.8, 8.0];
+      bounds = [5.7, 7.0, 8.5];
     }
-    final labels = ['Low', 'Normal', 'High', 'Very High'];
-    final colors = ['#e74c3c', '#2ecc71', '#3498db', '#9b59b6'];
+    final labels = [t('zone.smi.1'), t('zone.smi.2'), t('zone.smi.3'), t('zone.smi.4')];
+    final colors = ['danger', 'warning', 'success', 'primary'];
     final (label, color, _) = _getClassification(val, bounds, labels, colors);
     cls['smi'] = ClassificationResult(
-      value: val,
-      unit: 'kg/m²',
-      name: 'SMI',
-      label: label,
-      color: color,
-      bounds: bounds,
-      desc: 'Skeletal Muscle Index',
-      category: 'composition',
+      value: val, unit: 'kg/m²', name: t('metric.smi'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.smi'), category: 'composition',
+    );
+  }
+
+  // ---- WHR ----
+  if (metrics['whr'] != null) {
+    final val = (metrics['whr'] as num).toDouble();
+    List<double> bounds;
+    if (sex == 'M') {
+      bounds = [0.85, 0.90, 1.00];
+    } else {
+      bounds = [0.75, 0.85, 0.95];
+    }
+    final labels = [t('zone.whr.1'), t('zone.whr.2'), t('zone.whr.3'), t('zone.whr.4')];
+    final colors = ['primary', 'success', 'warning', 'danger'];
+    final (label, color, _) = _getClassification(val, bounds, labels, colors);
+    cls['whr'] = ClassificationResult(
+      value: val, unit: '', name: t('metric.whr'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.whr'), category: 'health',
+    );
+  }
+
+  // ---- WHtR ----
+  if (metrics['whtr'] != null) {
+    final val = (metrics['whtr'] as num).toDouble();
+    final bounds = [0.40, 0.50, 0.60];
+    final labels = [t('zone.whtr.1'), t('zone.whtr.2'), t('zone.whtr.3'), t('zone.whtr.4')];
+    final colors = ['info', 'success', 'warning', 'danger'];
+    final (label, color, _) = _getClassification(val, bounds, labels, colors);
+    cls['whtr'] = ClassificationResult(
+      value: val, unit: '', name: t('metric.whtr'),
+      label: label, color: color, bounds: bounds,
+      desc: t('desc.whtr'), category: 'health',
     );
   }
 

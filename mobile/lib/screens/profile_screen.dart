@@ -122,7 +122,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_back_ios, size: 20),
-                    onPressed: () => context.go('/'),
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/');
+                      }
+                    },
                     color: AppColors.textPrimary,
                   ),
                   Text(

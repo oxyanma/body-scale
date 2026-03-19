@@ -5,6 +5,7 @@ import '../theme/app_theme.dart';
 import '../services/i18n_service.dart';
 import '../services/ble_service.dart';
 import '../database/database_helper.dart';
+import '../calculations/body_composition.dart';
 import '../providers/providers.dart';
 import '../widgets/weight_hero_card.dart';
 import '../widgets/goal_card.dart';
@@ -22,6 +23,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Map<String, dynamic>? _prevMeasurement;
   List<Map<String, dynamic>> _goals = [];
   bool _loading = true;
+  bool _hasSaved = false;
 
   @override
   void initState() {
@@ -33,20 +35,98 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final db = DatabaseHelper.instance;
     final user = await db.getActiveUser();
     if (user == null) {
-      setState(() => _loading = false);
+      setState(() {
+        _user = null;
+        _loading = false;
+      });
       return;
     }
 
     final measurements = await db.getMeasurements(user['id'] as int, limit: 2);
-    final goals = await db.getGoals(user['id'] as int);
+    var goals = await db.getGoals(user['id'] as int);
 
-    setState(() {
-      _user = user;
-      _lastMeasurement = measurements.isNotEmpty ? measurements.first : null;
-      _prevMeasurement = measurements.length > 1 ? measurements[1] : null;
-      _goals = goals;
-      _loading = false;
-    });
+    // Auto-create goal with ideal weight (BMI 22) if none exists
+    if (goals.isEmpty && user['height_cm'] != null) {
+      final heightCm = (user['height_cm'] as num).toDouble();
+      final idealWeight = (22.0 * (heightCm / 100.0) * (heightCm / 100.0));
+      await db.insertGoal({
+        'user_id': user['id'] as int,
+        'metric': 'weight',
+        'target_value': double.parse(idealWeight.toStringAsFixed(1)),
+        'created_at': DateTime.now().toIso8601String(),
+      });
+      goals = await db.getGoals(user['id'] as int);
+    }
+
+    if (mounted) {
+      setState(() {
+        _user = user;
+        _lastMeasurement = measurements.isNotEmpty ? measurements.first : null;
+        _prevMeasurement = measurements.length > 1 ? measurements[1] : null;
+        _goals = goals;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _saveMeasurement(BleState state) async {
+    if (_user == null || state.weightKg == null) return;
+
+    final userId = _user!['id'] as int;
+    final weightKg = state.weightKg!;
+    final heightCm = (_user!['height_cm'] as num).toDouble();
+    final age = (_user!['age'] as num).toInt();
+    final sex = _user!['sex'] as String;
+    final activity = _user!['activity_level'] as String? ?? 'sedentary';
+    final waist = (_user!['waist_cm'] as num?)?.toDouble();
+    final hip = (_user!['hip_cm'] as num?)?.toDouble();
+    final impedance = state.impedance?.toDouble();
+
+    final metrics = getAllMetrics(
+      weightKg, heightCm, age, sex,
+      impedance: impedance,
+      activityLevel: activity,
+      waistCm: waist,
+      hipCm: hip,
+    );
+
+    final measurement = <String, dynamic>{
+      'user_id': userId,
+      'measured_at': DateTime.now().toIso8601String(),
+      'weight_kg': metrics['weight_kg'],
+      'impedance': state.impedance,
+      'bmi': metrics['bmi'],
+      'body_fat_percent': metrics['body_fat_percent'],
+      'muscle_mass_percent': metrics['muscle_mass_percent'],
+      'body_water_percent': metrics['body_water_percent'],
+      'bone_mass_kg': metrics['bone_mass_kg'],
+      'visceral_fat': metrics['visceral_fat'],
+      'bmr': metrics['bmr'],
+      'tdee': metrics['tdee'],
+      'metabolic_age': metrics['metabolic_age'],
+      'protein_percent': metrics['protein_percent'],
+      'fat_free_mass_kg': metrics['fat_free_mass_kg'],
+      'smm_kg': metrics['smm_kg'],
+      'lbm_kg': metrics['lbm_kg'],
+      'impedance_index': metrics['impedance_index'],
+      'body_score': metrics['body_score'],
+      'ideal_weight_kg': metrics['ideal_weight_kg'],
+      'ffmi': metrics['ffmi'],
+      'smi': metrics['smi'],
+      'subcutaneous_fat_kg': metrics['subcutaneous_fat_kg'],
+      'whr': metrics['whr'],
+      'whtr': metrics['whtr'],
+      'source': 'ble',
+    };
+
+    final db = DatabaseHelper.instance;
+    final newId = await db.insertMeasurement(measurement);
+
+    await _loadData();
+
+    if (mounted) {
+      context.push('/composition?id=$newId');
+    }
   }
 
   String _greeting() {
@@ -58,6 +138,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen for BLE completion to save measurement
+    ref.listen<AsyncValue<BleState>>(bleStateProvider, (previous, next) {
+      next.whenData((state) {
+        if (state.status == BleStatus.complete && !_hasSaved) {
+          _hasSaved = true;
+          _saveMeasurement(state);
+        }
+        if (state.status == BleStatus.scanning) {
+          _hasSaved = false;
+        }
+      });
+    });
+
     final bleState = ref.watch(bleStateProvider);
 
     if (_loading) {
@@ -109,12 +202,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 _buildWeighButton(bleState),
                 const SizedBox(height: 16),
 
-                // Goal Card
-                if (_goals.isNotEmpty && _lastMeasurement != null)
+                // Goal Card (show even without measurements)
+                if (_goals.isNotEmpty)
                   GoalCard(
                     goal: _goals.first,
-                    currentWeight:
-                        (_lastMeasurement!['weight_kg'] as num).toDouble(),
+                    currentWeight: _lastMeasurement != null
+                        ? (_lastMeasurement!['weight_kg'] as num).toDouble()
+                        : null,
+                    idealWeight: _user?['height_cm'] != null
+                        ? 22.0 * ((_user!['height_cm'] as num).toDouble() / 100.0) * ((_user!['height_cm'] as num).toDouble() / 100.0)
+                        : null,
+                    onGoalUpdated: _loadData,
                   ),
                 const SizedBox(height: 16),
 
@@ -231,7 +329,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => context.push('/profile'),
+                    onPressed: () async {
+                      await context.push('/profile');
+                      _loadData();
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.blue,
                       foregroundColor: Colors.white,
@@ -292,27 +393,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildWeighButton(AsyncValue<BleState> bleState) {
     String label = I18nService.t('overview.weigh_now_btn');
     Color bgColor = AppColors.blue;
-    bool isActive = false;
+    bool isDisabled = false;
+    bool isComplete = false;
 
     bleState.whenData((state) {
       switch (state.status) {
         case BleStatus.scanning:
           label = I18nService.t('overview.step_on_scale');
           bgColor = AppColors.purple;
-          isActive = true;
+          isDisabled = true;
           break;
         case BleStatus.measuring:
           label = I18nService.t('overview.measuring')
               .replaceAll('{weight}', state.weightKg?.toStringAsFixed(1) ?? '...');
           bgColor = AppColors.yellow;
-          isActive = true;
+          isDisabled = true;
           break;
         case BleStatus.stable:
-        case BleStatus.complete:
           label = I18nService.t('overview.measurement_complete')
               .replaceAll('{weight}', state.weightKg?.toStringAsFixed(2) ?? '');
           bgColor = AppColors.green;
-          isActive = true;
+          isDisabled = true;
+          break;
+        case BleStatus.complete:
+          label = I18nService.t('overview.weigh_again');
+          bgColor = AppColors.green;
+          isComplete = true;
           break;
         case BleStatus.error:
           label = state.errorMessage ?? I18nService.t('common.error');
@@ -326,9 +432,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: isActive
+        onPressed: isDisabled
             ? null
             : () {
+                _hasSaved = false;
+                if (isComplete) {
+                  ref.read(bleServiceProvider).stopScan();
+                }
                 ref.read(bleServiceProvider).startScan();
               },
         style: ElevatedButton.styleFrom(
@@ -360,19 +470,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _actionBtn(
           icon: Icons.history,
           label: I18nService.t('overview.quick_history'),
-          onTap: () => context.push('/history'),
+          onTap: () async {
+            await context.push('/history');
+            _loadData();
+          },
         ),
         const SizedBox(width: 12),
         _actionBtn(
           icon: Icons.analytics_outlined,
           label: I18nService.t('overview.quick_composition'),
-          onTap: () => context.push('/composition'),
+          onTap: () async {
+            await context.push('/composition');
+            _loadData();
+          },
         ),
         const SizedBox(width: 12),
         _actionBtn(
           icon: Icons.settings_outlined,
           label: I18nService.t('overview.quick_settings'),
-          onTap: () => context.push('/settings'),
+          onTap: () async {
+            await context.push('/settings');
+            _loadData();
+          },
         ),
       ],
     );
@@ -405,6 +524,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const SizedBox(height: 6),
               Text(
                 label,
+                textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
