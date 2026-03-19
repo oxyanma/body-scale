@@ -10,65 +10,74 @@ BioScale - Body Composition
 Free OKOK alternative: 20+ body metrics, no ads, no login, 100% offline.
 ```
 
-## Full Description (4000 chars max)
+## Full Description (4000 chars max) — 3874 chars
 
 ```
 BioScale is a free, open-source body composition analyzer for Bluetooth smart scales — built as a better alternative to the OKOK·International app.
 
-Tired of ads, paywalls, and inaccurate readings in the OKOK app? BioScale gives you everything OKOK charges for — and more — completely free.
+Tired of ads, paywalls, and inaccurate readings in the OKOK app? BioScale gives you everything OKOK charges for — and more — completely free. No account, no internet, no hidden costs.
 
 ⚖️ HOW IT WORKS
-Step on your Bluetooth scale, and BioScale automatically connects, reads your weight and impedance, and calculates 20+ body composition metrics in seconds. No account needed. No internet required.
+Step on your Bluetooth scale, and BioScale automatically connects via BLE, reads your weight and impedance, and calculates 20+ body composition metrics in seconds. Just open the app and step on the scale — that's it.
 
-📊 20+ BODY COMPOSITION METRICS (ALL FREE)
-• Body Score, BMI, Ideal Weight, Metabolic Age
-• Body Fat %, Fat Mass, Visceral Fat, Subcutaneous Fat
-• Muscle Mass, Skeletal Muscle (SMM), FFMI, SMI, LBM
-• Body Water %, Bone Mass, Protein %
-• Basal Metabolic Rate (BMR), Obesity Degree
-• Waist-to-Hip Ratio (WHR), Cardiovascular Risk
-• Each metric includes color-coded health zones and detailed explanations
+📊 20+ BODY COMPOSITION METRICS (ALL FREE, ALL UNLOCKED)
+• Body Score — overall health rating from 1 to 100
+• BMI — Body Mass Index with classification zones
+• Body Fat % — total body fat via bioelectrical impedance (BIA)
+• Fat Mass (kg) — absolute fat weight
+• Visceral Fat — dangerous fat around internal organs
+• Subcutaneous Fat — fat under the skin
+• Muscle Mass (% and kg) — total muscle tissue
+• Skeletal Muscle Mass (SMM) — validated against MRI (Janssen 2000)
+• FFMI — Fat-Free Mass Index (natural muscular potential)
+• SMI — Skeletal Muscle Index (sarcopenia screening, EWGSOP2)
+• LBM — Lean Body Mass (fat-free minus bones)
+• Body Water % — hydration level (Pace & Rathbun 1945)
+• Bone Mass (kg) — mineral bone density estimate
+• Protein % — cellular protein from muscle tissue
+• BMR — Basal Metabolic Rate (Mifflin-St Jeor)
+• Metabolic Age — your body's biological age
+• Ideal Weight — healthy BMI midpoint target
+• Obesity Degree — deviation from standard weight
+• Waist-to-Hip Ratio (WHR) — fat distribution indicator
+• Waist-to-Height Ratio (WHtR) — cardiovascular risk marker
+• Cardiovascular Risk Score — combined health assessment
+
+Every metric includes individual color-coded health zones and detailed layperson-friendly explanations. Tap any metric to learn what it means and how to improve it.
 
 📈 TRACK YOUR PROGRESS
 • Weight trend chart with 30-day variation
-• Full measurement history with delta indicators
+• Full measurement history with delta indicators showing gains and losses
 • Side-by-side comparison between any two measurements
-• Share your results as images
+• Share your composition or comparison results as images
+• Export all your data as CSV for analysis in Excel or Google Sheets
 
-👨‍👩‍👧‍👦 MULTI-PROFILE
-• Create profiles for the whole family
-• Independent data for each member
-• Custom goals per profile
+👨‍👩‍👧‍👦 MULTI-PROFILE — WHOLE FAMILY ON ONE DEVICE
+Create independent profiles for each family member. Each profile stores its own measurements, goals, age, height, sex, and activity level. Switch between profiles instantly.
 
-🌍 4 LANGUAGES
-• Português 🇧🇷
-• English 🇺🇸
-• Español 🇪🇸
-• Français 🇫🇷
+🌍 4 LANGUAGES BUILT-IN
+• Português 🇧🇷 • English 🇺🇸 • Español 🇪🇸 • Français 🇫🇷
 
-🔒 PRIVACY FIRST
-• 100% offline — no cloud, no servers, no tracking
-• All data stored locally on your device (SQLite)
-• No ads, no login, no account required
-• Export your data as CSV anytime
-• Open source — audit the code yourself
+🔒 PRIVACY FIRST — YOUR DATA STAYS YOURS
+• 100% offline — no cloud, no servers, no tracking, no analytics
+• All data stored locally on YOUR device only (SQLite database)
+• No ads — not now, not ever
+• No login or account required
+• No internet connection needed
+• Open source (MIT License) — inspect every line of code yourself
 
 ⚡ COMPATIBLE SCALES
-Works with any Bluetooth smart scale using the Chipsea chipset — the same scales that use the OKOK·International app. Common brands on Amazon, AliExpress, Shopee, and Mercado Livre.
+Works with any Bluetooth Low Energy (BLE) smart scale using the Chipsea chipset — the same scales compatible with OKOK·International. Common on Amazon, AliExpress, Shopee, Mercado Livre, and other marketplaces.
 
-🔬 SCIENTIFICALLY VALIDATED
-Unlike OKOK, BioScale uses published, peer-reviewed formulas:
-• Body Fat: OKOK CsAlgoBuilder (reverse-engineered) + Deurenberg 1991
-• Muscle Mass: Janssen et al. 2000 (validated against MRI)
-• BMR: Mifflin-St Jeor equation
-• Sarcopenia Risk: EWGSOP2 (Cruz-Jentoft 2019)
-
-📱 ALSO AVAILABLE AS DESKTOP APP
-BioScale also runs as a desktop web app on macOS, Windows, and Linux.
-Source code: https://github.com/brumathey/bioscale-okok-alternative
+🔬 SCIENTIFICALLY VALIDATED FORMULAS
+Unlike the OKOK app, BioScale uses published, peer-reviewed scientific formulas. The body fat algorithm was reverse-engineered from the OKOK CsAlgoBuilder for accuracy, and all other metrics use validated references from medical journals.
 
 ⚠️ HEALTH DISCLAIMER
-Body composition estimates are for informational purposes only and do not replace professional medical advice.
+Body composition estimates are for informational purposes only and do not replace professional medical advice, diagnosis, or treatment.
+
+📱 ALSO AVAILABLE AS DESKTOP APP
+BioScale also runs on macOS, Windows, and Linux as a desktop web app.
+Open source: github.com/brumathey/bioscale-okok-alternative
 ```
 
 ## Category
