@@ -114,7 +114,7 @@ class BodyCompositionReport extends StatelessWidget {
           SizedBox(
             width: 130,
             height: 240,
-            child: BodySilhouette(waterPercent: waterPercent),
+            child: BodySilhouette(waterPercent: waterPercent, sex: sex),
           ),
           const SizedBox(width: 16),
           Expanded(
