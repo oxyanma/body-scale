@@ -23,6 +23,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Map<String, dynamic>? _user;
   bool _loading = true;
   final Set<int> _selectedIds = {};
+  final Set<String> _expandedGroups = {};
+  bool _compareMode = false;
 
   @override
   void initState() {
@@ -38,11 +40,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
       return;
     }
     final measurements = await db.getMeasurements(user['id'] as int);
+
+    // Expand current month by default
+    final now = DateTime.now();
+    _expandedGroups.add('${now.year}/${now.month.toString().padLeft(2, '0')}');
+
     setState(() {
       _user = user;
       _measurements = measurements;
       _loading = false;
     });
+  }
+
+  /// Groups measurements by year/month key (e.g. "2026/03").
+  Map<String, List<Map<String, dynamic>>> _groupByMonth() {
+    final groups = <String, List<Map<String, dynamic>>>{};
+    for (final m in _measurements) {
+      final dt = DateTime.tryParse(m['measured_at']?.toString() ?? '');
+      if (dt == null) continue;
+      final key = '${dt.year}/${dt.month.toString().padLeft(2, '0')}';
+      groups.putIfAbsent(key, () => []).add(m);
+    }
+    return groups;
   }
 
   @override
@@ -73,7 +92,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildTrendCard(),
-                        _buildCompareBar(),
+                        const SizedBox(height: 16),
                         _buildRecords(),
                         const SizedBox(height: 24),
                       ],
@@ -84,6 +103,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
         ),
       ),
+      bottomNavigationBar: _measurements.isNotEmpty ? _buildBottomBar() : null,
     );
   }
 
@@ -190,7 +210,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       }
     }
 
-    // Chart data (reversed for chronological order)
     final reversed = _measurements.reversed.toList();
     final spots = <FlSpot>[];
     for (var i = 0; i < reversed.length; i++) {
@@ -307,7 +326,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ],
                     ),
                   )
-                : const Center(child: Text('📊', style: TextStyle(fontSize: 40))),
+                : Center(
+                    child: Icon(Icons.bar_chart_rounded, size: 40, color: AppColors.textMuted),
+                  ),
           ),
           const SizedBox(height: 12),
           Row(
@@ -341,197 +362,201 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildCompareBar() {
-    String text = I18nService.t('history.compare_select');
-    bool canCompare = _selectedIds.length == 2;
-
-    if (_selectedIds.length == 1) {
-      text = I18nService.t('history.compare_1of2');
-    } else if (_selectedIds.length == 2) {
-      text = I18nService.t('history.compare_2of2');
-    } else if (_selectedIds.length > 2) {
-      text = I18nService.t('history.compare_only2');
-    }
-
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4A90D9), Color(0xFF6C5CE7)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.blue.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+  // ─── Column headers ───
+  Widget _buildColumnHeaders() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          const Text('📊', style: TextStyle(fontSize: 20)),
-          const SizedBox(width: 12),
+          SizedBox(
+            width: 70,
+            child: Text(
+              I18nService.t('history.col_time'),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  I18nService.t('history.compare_title'),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
-                Text(
-                  text,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 11,
-                  ),
-                ),
-              ],
+            child: Text(
+              I18nService.t('history.col_weight'),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMuted,
+              ),
             ),
           ),
-          if (canCompare)
-            ElevatedButton(
-              onPressed: () {
-                final ids = _selectedIds.toList();
-                context.push('/comparison?a=${ids[0]}&b=${ids[1]}');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: AppColors.blue,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          Expanded(
+            child: Text(
+              I18nService.t('history.col_fat'),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMuted,
               ),
+            ),
+          ),
+          const SizedBox(width: 30),
+        ],
+      ),
+    );
+  }
+
+  // ─── Group header (year/month) ───
+  Widget _buildGroupHeader(String groupKey, List<Map<String, dynamic>> items) {
+    final isExpanded = _expandedGroups.contains(groupKey);
+
+    // Calculate monthly deltas (first - last in group)
+    final firstWeight = (items.first['weight_kg'] as num).toDouble();
+    final lastWeight = (items.last['weight_kg'] as num).toDouble();
+    final weightDelta = items.length > 1 ? firstWeight - lastWeight : 0.0;
+
+    final firstFat = (items.first['body_fat_percent'] as num?)?.toDouble();
+    final lastFat = (items.last['body_fat_percent'] as num?)?.toDouble();
+    final fatDelta = (firstFat != null && lastFat != null && items.length > 1)
+        ? firstFat - lastFat
+        : null;
+
+    const orange = Color(0xFFE67E22);
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (isExpanded) {
+            _expandedGroups.remove(groupKey);
+          } else {
+            _expandedGroups.add(groupKey);
+          }
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.bgCard,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Orange vertical bar
+            Container(
+              width: 3,
+              height: 24,
+              margin: const EdgeInsets.only(right: 10),
+              decoration: BoxDecoration(
+                color: orange,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Year/Month
+            SizedBox(
+              width: 62,
               child: Text(
-                I18nService.t('history.compare_btn'),
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                groupKey,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: orange,
+                ),
               ),
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecords() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            I18nService.t('history.records'),
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textMuted,
-              letterSpacing: 0.8,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.bgCard,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, 2),
+            // Weight delta
+            Expanded(
+              child: Text(
+                _formatGroupDelta(weightDelta),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: orange,
                 ),
-              ],
+              ),
             ),
-            child: Column(
-              children: [
-                for (var i = 0; i < _measurements.length && i < 30; i++)
-                  _recordRow(i),
-              ],
+            // Fat delta
+            Expanded(
+              child: Text(
+                fatDelta != null ? _formatGroupDelta(fatDelta) : '--',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: orange,
+                ),
+              ),
             ),
-          ),
-        ],
+            // Toggle chevron
+            Icon(
+              isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+              color: orange,
+              size: 22,
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _recordRow(int index) {
-    final m = _measurements[index];
+  String _formatGroupDelta(double delta) {
+    if (delta.abs() < 0.05) return '--';
+    final sign = delta > 0 ? '+' : '';
+    return '$sign${delta.toStringAsFixed(1)}';
+  }
+
+  // ─── Measurement row ───
+  Widget _buildMeasurementRow(Map<String, dynamic> m, Map<String, dynamic>? prev) {
     final id = m['id'] as int;
     final weight = (m['weight_kg'] as num).toDouble();
-    final bmi = (m['bmi'] as num?)?.toDouble();
-    final bf = (m['body_fat_percent'] as num?)?.toDouble();
+    final fat = (m['body_fat_percent'] as num?)?.toDouble();
+    final dt = DateTime.tryParse(m['measured_at']?.toString() ?? '');
     final isSelected = _selectedIds.contains(id);
 
-    // BMI status
-    String bmiLabel = '';
-    Color bmiColor = AppColors.textMuted;
-    Color bmiBg = AppColors.bgMain;
-    if (bmi != null) {
-      if (bmi < 18.5) {
-        bmiLabel = I18nService.t('bmi.below');
-        bmiColor = AppColors.blue;
-        bmiBg = AppColors.blueLight;
-      } else if (bmi < 25) {
-        bmiLabel = I18nService.t('bmi.normal');
-        bmiColor = AppColors.green;
-        bmiBg = AppColors.greenLight;
-      } else if (bmi < 30) {
-        bmiLabel = I18nService.t('bmi.overweight');
-        bmiColor = AppColors.yellow;
-        bmiBg = AppColors.yellowLight;
-      } else {
-        bmiLabel = I18nService.t('bmi.obese');
-        bmiColor = AppColors.red;
-        bmiBg = AppColors.redLight;
-      }
-    }
+    final prevWeight = prev != null ? (prev['weight_kg'] as num).toDouble() : null;
+    final prevFat = prev != null ? (prev['body_fat_percent'] as num?)?.toDouble() : null;
 
-    // Delta
-    String delta = '';
-    Color deltaColor = AppColors.textMuted;
-    if (index + 1 < _measurements.length) {
-      final d = weight - (_measurements[index + 1]['weight_kg'] as num).toDouble();
-      if (d != 0) {
-        delta = '${d > 0 ? '↑' : '↓'} ${d.abs().toStringAsFixed(1)}';
-        deltaColor = d > 0 ? AppColors.red : AppColors.green;
-      }
-    }
+    final weightDelta = prevWeight != null ? weight - prevWeight : null;
+    final fatDelta = (fat != null && prevFat != null) ? fat - prevFat : null;
 
-    final dateStr = _formatDate(m['measured_at']);
-
-    return InkWell(
-      onTap: () => context.push('/composition?id=$id'),
+    return GestureDetector(
+      onTap: () {
+        if (_compareMode) {
+          setState(() {
+            if (isSelected) {
+              _selectedIds.remove(id);
+            } else {
+              _selectedIds.add(id);
+            }
+          });
+        } else {
+          context.push('/composition?id=$id');
+        }
+      },
+      onLongPress: () => _confirmDelete(id),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
         decoration: BoxDecoration(
-          border: index > 0
-              ? const Border(top: BorderSide(color: AppColors.borderLight, width: 0.5))
+          color: isSelected ? AppColors.blueLight : AppColors.bgCard,
+          borderRadius: BorderRadius.circular(12),
+          border: isSelected
+              ? Border.all(color: AppColors.blue, width: 1.5)
               : null,
         ),
         child: Row(
           children: [
-            // Checkbox
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  if (isSelected) {
-                    _selectedIds.remove(id);
-                  } else {
-                    _selectedIds.add(id);
-                  }
-                });
-              },
-              child: Container(
-                width: 22,
-                height: 22,
-                margin: const EdgeInsets.only(right: 10),
+            // Checkbox (only in compare mode)
+            if (_compareMode) ...[
+              Container(
+                width: 20,
+                height: 20,
+                margin: const EdgeInsets.only(right: 8),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
@@ -541,73 +566,206 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   color: isSelected ? AppColors.blue : Colors.transparent,
                 ),
                 child: isSelected
-                    ? const Icon(Icons.check, size: 14, color: Colors.white)
+                    ? const Icon(Icons.check, size: 12, color: Colors.white)
                     : null,
               ),
+            ],
+            // Date/time
+            SizedBox(
+              width: 55,
+              child: Text(
+                dt != null
+                    ? '${dt.month.toString().padLeft(2, '0')}/${dt.day.toString().padLeft(2, '0')}\n${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}'
+                    : '--',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                  height: 1.4,
+                ),
+              ),
             ),
-            // Weight + date
+            const SizedBox(width: 8),
+            // Weight + delta
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
                   Text(
-                    '${weight.toStringAsFixed(2)} kg',
+                    weight.toStringAsFixed(2),
                     style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
                     ),
                   ),
+                  const SizedBox(width: 4),
                   Text(
-                    dateStr,
-                    style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                    weightDelta != null
+                        ? '${weightDelta >= 0 ? "+" : ""}${weightDelta.toStringAsFixed(1)}'
+                        : '--',
+                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                   ),
                 ],
               ),
             ),
-            // BMI badge
-            if (bmiLabel.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                margin: const EdgeInsets.only(right: 6),
-                decoration: BoxDecoration(
-                  color: bmiBg,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  bmiLabel,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: bmiColor,
+            // Fat + delta
+            Expanded(
+              child: Row(
+                children: [
+                  Text(
+                    fat?.toStringAsFixed(1) ?? '--',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 4),
+                  Text(
+                    fatDelta != null
+                        ? '${fatDelta >= 0 ? "+" : ""}${fatDelta.toStringAsFixed(1)}'
+                        : '--',
+                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  ),
+                ],
               ),
-            // Body fat
-            if (bf != null)
-              Text(
-                '${bf.toStringAsFixed(0)}%',
-                style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-              ),
-            const SizedBox(width: 6),
-            // Delta
-            if (delta.isNotEmpty)
-              Text(
-                delta,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: deltaColor,
-                ),
-              ),
-            // Delete
-            IconButton(
-              icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.textMuted),
-              onPressed: () => _confirmDelete(id),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Records section with grouped layout ───
+  Widget _buildRecords() {
+    final groups = _groupByMonth();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildColumnHeaders(),
+        for (final entry in groups.entries) ...[
+          _buildGroupHeader(entry.key, entry.value),
+          if (_expandedGroups.contains(entry.key))
+            for (var i = 0; i < entry.value.length; i++)
+              _buildMeasurementRow(
+                entry.value[i],
+                i + 1 < entry.value.length ? entry.value[i + 1] : null,
+              ),
+        ],
+      ],
+    );
+  }
+
+  // ─── Bottom bar with Comparison + Export buttons ───
+  Widget _buildBottomBar() {
+    final bool canCompare = _selectedIds.length == 2;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildGradientButton(
+              icon: Icons.compare_arrows_rounded,
+              label: I18nService.t('history.comparison_btn'),
+              colors: _compareMode
+                  ? [const Color(0xFFE67E22), const Color(0xFFF39C12)]
+                  : [const Color(0xFFE67E22), const Color(0xFFF39C12)],
+              onPressed: () {
+                if (_compareMode && canCompare) {
+                  final ids = _selectedIds.toList();
+                  context.push('/comparison?a=${ids[0]}&b=${ids[1]}');
+                } else {
+                  setState(() {
+                    _compareMode = !_compareMode;
+                    if (!_compareMode) _selectedIds.clear();
+                  });
+                }
+              },
+              badge: _compareMode
+                  ? '${_selectedIds.length}/2'
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildGradientButton(
+              icon: Icons.ios_share_rounded,
+              label: I18nService.t('history.export_btn'),
+              colors: [const Color(0xFF4A90D9), const Color(0xFF6C5CE7)],
+              onPressed: _shareAsImage,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGradientButton({
+    required IconData icon,
+    required String label,
+    required List<Color> colors,
+    required VoidCallback onPressed,
+    String? badge,
+  }) {
+    return Material(
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            gradient: LinearGradient(
+              colors: colors,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+              if (badge != null) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    badge,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -637,23 +795,5 @@ class _HistoryScreenState extends State<HistoryScreen> {
       _selectedIds.remove(id);
       await _loadData();
     }
-  }
-
-  String _formatDate(dynamic dt) {
-    if (dt == null) return '--';
-    DateTime date;
-    if (dt is String) {
-      date = DateTime.tryParse(dt) ?? DateTime.now();
-    } else {
-      date = dt as DateTime;
-    }
-    final months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    final monthKey = 'month_short.${date.month}';
-    final monthStr = I18nService.t(monthKey);
-    final fallback = monthStr == monthKey ? months[date.month] : monthStr;
-    return '${date.day.toString().padLeft(2, '0')} $fallback, ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 }

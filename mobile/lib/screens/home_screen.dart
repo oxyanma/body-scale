@@ -371,7 +371,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildNoMeasurements() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       decoration: BoxDecoration(
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(16),
@@ -385,14 +385,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       child: Column(
         children: [
-          const Text('📊', style: TextStyle(fontSize: 40)),
-          const SizedBox(height: 12),
+          Container(
+            width: 64,
+            height: 64,
+            decoration: const BoxDecoration(
+              color: AppColors.blueLight,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.monitor_weight_outlined,
+              size: 32,
+              color: AppColors.blue,
+            ),
+          ),
+          const SizedBox(height: 16),
           Text(
-            I18nService.t('overview.no_measurements'),
+            I18nService.t('overview.no_measurements_title'),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            I18nService.t('overview.no_measurements_subtitle'),
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: AppColors.textSecondary,
-              fontSize: 14,
+              fontSize: 13,
+              height: 1.4,
             ),
           ),
         ],

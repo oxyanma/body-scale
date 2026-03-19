@@ -228,12 +228,13 @@ class WeightControlTips extends StatelessWidget {
   }
 
   String _getWeightTipText() {
+    final diff = weightDelta.abs().toStringAsFixed(1);
     if (weightDelta.abs() < 0.5) {
       return I18nService.t('report.weight_tip_ideal');
     } else if (weightDelta > 0) {
-      return I18nService.t('report.weight_tip_lose');
+      return I18nService.t('report.weight_tip_lose').replaceAll('{diff}', diff);
     } else {
-      return I18nService.t('report.weight_tip_gain');
+      return I18nService.t('report.weight_tip_gain').replaceAll('{diff}', diff);
     }
   }
 }
