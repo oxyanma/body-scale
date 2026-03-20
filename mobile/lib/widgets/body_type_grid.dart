@@ -38,15 +38,32 @@ class BodyTypeGrid extends StatelessWidget {
     final active = _isActive(row, col) && !empty;
     final key = bodyTypeKeys[row][col];
 
+    // Only outer corners get radius
+    const r = Radius.circular(8);
+    final borderRadius = BorderRadius.only(
+      topLeft: (row == 0 && col == 0) ? r : Radius.zero,
+      topRight: (row == 0 && col == 2) ? r : Radius.zero,
+      bottomLeft: (row == 3 && col == 0) ? r : Radius.zero,
+      bottomRight: (row == 3 && col == 2) ? r : Radius.zero,
+    );
+
+    // Shared borders: right/bottom only for inner edges, all edges for outer
+    final borderColor = AppColors.borderLight;
+    final border = Border(
+      top: row == 0 ? BorderSide(color: borderColor) : BorderSide.none,
+      left: col == 0 ? BorderSide(color: borderColor) : BorderSide.none,
+      right: BorderSide(color: borderColor),
+      bottom: BorderSide(color: borderColor),
+    );
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
       decoration: BoxDecoration(
         color: active ? AppColors.redLight : Colors.white,
-        border: Border.all(
-          color: active ? AppColors.red : AppColors.borderLight,
-          width: active ? 2 : 1,
-        ),
-        borderRadius: BorderRadius.circular(4),
+        border: active
+            ? Border.all(color: AppColors.red, width: 2)
+            : border,
+        borderRadius: active ? BorderRadius.circular(6) : borderRadius,
       ),
       child: Center(
         child: Text(
@@ -111,13 +128,7 @@ class BodyTypeGrid extends StatelessWidget {
                 children: List.generate(4, (row) {
                   return TableRow(
                     children: List.generate(3, (col) {
-                      return Padding(
-                        padding: EdgeInsets.only(
-                          left: col > 0 ? 4 : 0,
-                          top: row > 0 ? 4 : 0,
-                        ),
-                        child: _buildCell(row, col),
-                      );
+                      return _buildCell(row, col);
                     }),
                   );
                 }),
