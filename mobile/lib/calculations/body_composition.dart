@@ -868,32 +868,14 @@ Map<String, ClassificationResult> getClassifications(
   {
     final iw = (metrics['ideal_weight_kg'] as num).toDouble();
     final diff = w - iw;
-    final bounds = [iw - 5.0, iw, iw + 5.0];
+    // Percentage-based bounds: ±4% ideal, +10% far
+    final bounds = [_r(iw * 0.96, 1), _r(iw * 1.04, 1), _r(iw * 1.10, 1)];
     final iwZoneColors = ['info', 'success', 'warning', 'danger'];
-    String label;
-    String color;
-    if (diff.abs() < 3) {
-      label = t('zone.ideal_weight.2'); // Ideal
-      color = 'success';
-    } else if (diff < -3) {
-      // Abaixo do ideal
-      if (diff.abs() < 8) {
-        label = t('zone.ideal_weight.1'); // Magro/Lean
-        color = 'info';
-      } else {
-        label = t('zone.ideal_weight.4'); // Longe/Far
-        color = 'danger';
-      }
-    } else {
-      // Acima do ideal
-      if (diff < 8) {
-        label = t('zone.ideal_weight.3'); // Acima/Above
-        color = 'warning';
-      } else {
-        label = t('zone.ideal_weight.4'); // Longe/Far
-        color = 'danger';
-      }
-    }
+    final labels = [t('zone.ideal_weight.1'), t('zone.ideal_weight.2'), t('zone.ideal_weight.3'), t('zone.ideal_weight.4')];
+    final colors = ['info', 'success', 'warning', 'danger'];
+    // Use _getClassification with actual weight against percentage-based bounds
+    // so tag and bar pin always align
+    final (label, color, _) = _getClassification(w, bounds, labels, colors);
     final desc = t('desc.ideal_weight').replaceAll('{diff}', diff.toStringAsFixed(1));
     cls['ideal_weight'] = ClassificationResult(
       value: iw, unit: 'kg', name: t('metric.ideal_weight'),
