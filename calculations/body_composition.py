@@ -252,8 +252,8 @@ def calculate_cv_risk(whr, whtr, visceral_fat, bmi, sex):
         risk += 1
     if bmi > 30:
         risk += 1
-    labels = {1: "Baixo", 2: "Moderado", 3: "Elevado", 4: "Alto", 5: "Muito Alto"}
-    return risk, labels.get(risk, "Alto")
+    labels = {1: "Low", 2: "Moderate", 3: "Elevated", 4: "High", 5: "Very High"}
+    return risk, labels.get(risk, "High")
 
 
 # ═══════════════════ TIER 3 — Indices & Scores ═══════════════════
@@ -275,18 +275,18 @@ def calculate_smi(smm_kg, height_cm):
 def calculate_sarcopenia_risk(smi, sex):
     """EWGSOP2 thresholds: M < 7.0, F < 5.7 kg/m²."""
     if smi is None:
-        return "Sem dados"
+        return "No data"
     if sex == 'M':
         if smi < 7.0:
-            return "Alto"
+            return "High"
         elif smi < 8.5:
-            return "Moderado"
+            return "Moderate"
         return "Normal"
     else:
         if smi < 5.7:
-            return "Alto"
+            return "High"
         elif smi < 7.0:
-            return "Moderado"
+            return "Moderate"
         return "Normal"
 
 
@@ -401,30 +401,30 @@ def _get_classification(val, bounds, labels, colors):
 def get_classifications(metrics, sex, age, height_cm):
     cls = {}
 
-    # ── Peso ──
+    # ── Weight ──
     w_min, w_max = calculate_ideal_weight_range(height_cm)
     w_obese = 30.0 * ((height_cm / 100.0) ** 2)
     w = metrics.get('weight_kg', 0)
     lb, color, _ = _get_classification(w, [w_min, w_max, w_obese],
-        ["Baixo", "Saudável", "Alto", "Obeso"], ["info", "success", "warning", "danger"])
-    cls["weight"] = {"value": w, "unit": "kg", "name": "Peso", "label": lb, "color": color,
+        ["Low", "Healthy", "High", "Obese"], ["info", "success", "warning", "danger"])
+    cls["weight"] = {"value": w, "unit": "kg", "name": "Weight", "label": lb, "color": color,
         "bounds": [round(w_min,1), round(w_max,1), round(w_obese,1)],
-        "desc": "Peso corporal total. Mudanças bruscas merecem atenção.", "category": "composicao"}
+        "desc": "Total body weight. Sudden changes deserve attention.", "category": "composition"}
 
     # ── BMI ──
     bmi = metrics.get('bmi', 0)
     lb, color, _ = _get_classification(bmi, [18.5, 25.0, 30.0],
-        ["Abaixo", "Saudável", "Sobrepeso", "Obeso"], ["info", "success", "warning", "danger"])
-    cls["bmi"] = {"value": bmi, "unit": "", "name": "IMC", "label": lb, "color": color,
+        ["Underweight", "Healthy", "Overweight", "Obese"], ["info", "success", "warning", "danger"])
+    cls["bmi"] = {"value": bmi, "unit": "", "name": "BMI", "label": lb, "color": color,
         "bounds": [18.5, 25.0, 30.0],
-        "desc": "Índice de Massa Corporal. Medida internacional de peso ideal.", "category": "composicao"}
+        "desc": "Body Mass Index. International measure of ideal weight.", "category": "composition"}
 
     # ── Obesity % ──
     ob = metrics.get('obesity_percent', 0)
     lb, color, _ = _get_classification(ob, [-10.0, 10.0, 20.0],
-        ["Baixo", "Saudável", "Acima", "Obeso"], ["info", "success", "warning", "danger"])
-    cls["obesity_percent"] = {"value": ob, "unit": "%", "name": "Grau de Obesidade", "label": lb, "color": color,
-        "bounds": [-10.0, 10.0, 20.0], "desc": "Diferença percentual em relação ao peso padrão.", "category": "composicao"}
+        ["Low", "Healthy", "Above", "Obese"], ["info", "success", "warning", "danger"])
+    cls["obesity_percent"] = {"value": ob, "unit": "%", "name": "Obesity Degree", "label": lb, "color": color,
+        "bounds": [-10.0, 10.0, 20.0], "desc": "Percentage difference from standard weight.", "category": "composition"}
 
     # ── Body Fat % ──
     bf = metrics.get('body_fat_percent', 0)
@@ -437,63 +437,63 @@ def get_classifications(metrics, sex, age, height_cm):
         elif age < 60: bounds = [23.0, 34.0, 40.0]
         else: bounds = [24.0, 36.0, 42.0]
     lb, color, _ = _get_classification(bf, bounds,
-        ["Baixo", "Saudável", "Alto", "Obeso"], ["info", "success", "warning", "danger"])
-    cls["body_fat"] = {"value": bf, "unit": "%", "name": "Gordura", "label": lb, "color": color,
-        "bounds": bounds, "desc": "Porcentagem de gordura corporal total via bioimpedância OKOK.", "category": "composicao"}
+        ["Low", "Healthy", "High", "Obese"], ["info", "success", "warning", "danger"])
+    cls["body_fat"] = {"value": bf, "unit": "%", "name": "Body Fat", "label": lb, "color": color,
+        "bounds": bounds, "desc": "Total body fat percentage via bioimpedance.", "category": "composition"}
 
     # ── Fat Mass (kg) ──
     fm_val = metrics.get('fat_mass_kg', 0)
     fm_bounds = [round(w * bounds[0]/100, 1), round(w * bounds[1]/100, 1), round(w * bounds[2]/100, 1)]
-    cls["fat_mass"] = {"value": fm_val, "unit": "kg", "name": "Peso da Gordura", "label": lb, "color": color,
-        "bounds": fm_bounds, "desc": "Massa de gordura corporal total em quilos.", "category": "composicao"}
+    cls["fat_mass"] = {"value": fm_val, "unit": "kg", "name": "Fat Mass", "label": lb, "color": color,
+        "bounds": fm_bounds, "desc": "Total body fat mass in kilograms.", "category": "composition"}
 
     # ── Visceral Fat ──
     vf = metrics.get('visceral_fat', 0)
-    if vf <= 9: lb, color = "Saudável", "success"
-    elif vf <= 14: lb, color = "Alto", "warning"
-    else: lb, color = "Perigoso", "danger"
-    cls["visceral_fat"] = {"value": vf, "unit": "", "name": "Gord. Visceral", "label": lb, "color": color,
+    if vf <= 9: lb, color = "Healthy", "success"
+    elif vf <= 14: lb, color = "High", "warning"
+    else: lb, color = "Dangerous", "danger"
+    cls["visceral_fat"] = {"value": vf, "unit": "", "name": "Visceral Fat", "label": lb, "color": color,
         "bounds": [9.0, 14.0, 15.0],
-        "desc": "Gordura ao redor dos órgãos internos. Fator de risco cardiovascular.", "category": "composicao"}
+        "desc": "Fat around internal organs. Cardiovascular risk factor.", "category": "composition"}
 
     # ── Subcutaneous Fat ──
     sf = metrics.get('subcutaneous_fat_kg', 0)
     fm = metrics.get('fat_mass_kg', 0)
     sf_bounds = [round(b * 0.80, 1) for b in bounds]  # Use body_fat bounds scaled
-    lb, color = ("Saudável", "success") if bf < bounds[1] else ("Alto", "warning") if bf < bounds[2] else ("Obeso", "danger")
-    cls["subcutaneous_fat"] = {"value": sf, "unit": "kg", "name": "Gord. Subcutânea", "label": lb, "color": color,
+    lb, color = ("Healthy", "success") if bf < bounds[1] else ("High", "warning") if bf < bounds[2] else ("Obese", "danger")
+    cls["subcutaneous_fat"] = {"value": sf, "unit": "kg", "name": "Subcutaneous Fat", "label": lb, "color": color,
         "bounds": [round(w * 0.80 * b / 100, 1) for b in [20, 30, 40]],
-        "desc": "Gordura sob a pele (~80% da gordura total). Menos perigosa que a visceral.", "category": "composicao"}
+        "desc": "Fat under the skin (~80% of total fat). Less dangerous than visceral.", "category": "composition"}
 
     # ── Body Water ──
     bw = metrics.get('body_water_percent', 0)
     bw_bounds = [50.0, 65.0, 80.0] if sex == 'M' else [45.0, 60.0, 80.0]
     lb, color, _ = _get_classification(bw, bw_bounds,
-        ["Baixo", "Saudável", "Alto", "Retenção"], ["info", "success", "warning", "danger"])
-    cls["body_water"] = {"value": bw, "unit": "%", "name": "Água", "label": lb, "color": color,
-        "bounds": bw_bounds, "desc": "Porcentagem total de fluidos no corpo (73% da massa magra).", "category": "hidratacao"}
+        ["Low", "Healthy", "High", "Retention"], ["info", "success", "warning", "danger"])
+    cls["body_water"] = {"value": bw, "unit": "%", "name": "Body Water", "label": lb, "color": color,
+        "bounds": bw_bounds, "desc": "Total body fluid percentage (73% of lean mass).", "category": "hydration"}
 
     # ── Water Mass (kg) ──
     wm = metrics.get('water_mass_kg', 0)
     wm_bounds = [round(w * bw_bounds[0]/100, 1), round(w * bw_bounds[1]/100, 1), round(w * bw_bounds[2]/100, 1)]
-    cls["water_mass"] = {"value": wm, "unit": "kg", "name": "Peso da Água", "label": lb, "color": color,
-        "bounds": wm_bounds, "desc": "Massa de água corporal total em quilos.", "category": "hidratacao"}
+    cls["water_mass"] = {"value": wm, "unit": "kg", "name": "Water Mass", "label": lb, "color": color,
+        "bounds": wm_bounds, "desc": "Total body water mass in kilograms.", "category": "hydration"}
 
     # ── Total Muscle Mass % ──
     mm = metrics.get('muscle_mass_percent', 0)
     mm_bounds = [65.0, 75.0, 85.0] if sex == 'M' else [60.0, 70.0, 80.0]
     lb, color, _ = _get_classification(mm, mm_bounds,
-        ["Baixo", "Saudável", "Bom", "Excelente"], ["warning", "success", "primary", "info"])
-    cls["muscle_mass"] = {"value": mm, "unit": "%", "name": "Massa Muscular", "label": lb, "color": color,
-        "bounds": mm_bounds, "desc": "Massa muscular total (estimada como LBM).", "category": "muscular"}
+        ["Low", "Healthy", "Good", "Excellent"], ["warning", "success", "primary", "info"])
+    cls["muscle_mass"] = {"value": mm, "unit": "%", "name": "Muscle Mass", "label": lb, "color": color,
+        "bounds": mm_bounds, "desc": "Total muscle mass (estimated as LBM).", "category": "muscle"}
 
     # ── Total Muscle Mass (kg) ──
     mm_kg = metrics.get('muscle_mass_kg', 0)
     mm_kg_bounds = [round(w * mm_bounds[0]/100, 1), round(w * mm_bounds[1]/100, 1), round(w * mm_bounds[2]/100, 1)]
     lb_kg, color_kg, _ = _get_classification(mm_kg, mm_kg_bounds,
-        ["Baixo", "Saudável", "Bom", "Excelente"], ["warning", "success", "primary", "info"])
-    cls["muscle_mass_kg"] = {"value": mm_kg, "unit": "kg", "name": "Massa Muscular (kg)", "label": lb_kg, "color": color_kg,
-        "bounds": mm_kg_bounds, "desc": "Massa muscular total em quilos (FFM − massa óssea).", "category": "muscular"}
+        ["Low", "Healthy", "Good", "Excellent"], ["warning", "success", "primary", "info"])
+    cls["muscle_mass_kg"] = {"value": mm_kg, "unit": "kg", "name": "Muscle Mass (kg)", "label": lb_kg, "color": color_kg,
+        "bounds": mm_kg_bounds, "desc": "Total muscle mass in kilograms (FFM - bone mass).", "category": "muscle"}
 
     # ── LBM (kg) ──
     lbm_val = metrics.get('lbm_kg', 0)
@@ -502,113 +502,113 @@ def get_classifications(metrics, sex, age, height_cm):
     else:
         lbm_bounds = [round(w * 0.60, 1), round(w * 0.70, 1), round(w * 0.80, 1)]
     lb_lbm, color_lbm, _ = _get_classification(lbm_val, lbm_bounds,
-        ["Baixo", "Saudável", "Bom", "Excelente"], ["warning", "success", "primary", "info"])
+        ["Low", "Healthy", "Good", "Excellent"], ["warning", "success", "primary", "info"])
     cls["lbm"] = {"value": lbm_val, "unit": "kg", "name": "LBM", "label": lb_lbm, "color": color_lbm,
-        "bounds": lbm_bounds, "desc": "Lean Body Mass — massa magra sem gordura nem ossos.", "category": "muscular"}
+        "bounds": lbm_bounds, "desc": "Lean Body Mass — fat-free and bone-free mass.", "category": "muscle"}
 
     # ── SMM % ──
     smm_pct = metrics.get('smm_percent', 0)
     if smm_pct:
         smm_pct_bounds = [33.0, 40.0, 50.0] if sex == 'M' else [24.0, 31.0, 40.0]
         lb, color, _ = _get_classification(smm_pct, smm_pct_bounds,
-            ["Baixo", "Saudável", "Excelente", "Atleta"], ["warning", "success", "primary", "info"])
-        cls["smm_percent"] = {"value": smm_pct, "unit": "%", "name": "M. Esquelética (%)", "label": lb, "color": color,
-            "bounds": smm_pct_bounds, "desc": "Percentual de massa muscular esquelética.", "category": "muscular"}
+            ["Low", "Healthy", "Excellent", "Athlete"], ["warning", "success", "primary", "info"])
+        cls["smm_percent"] = {"value": smm_pct, "unit": "%", "name": "Skeletal M. (%)", "label": lb, "color": color,
+            "bounds": smm_pct_bounds, "desc": "Skeletal muscle mass percentage.", "category": "muscle"}
 
     # ── SMM (kg) ──
     smm = metrics.get('smm_kg')
     if smm:
         smm_bounds = [20.0, 28.0, 38.0] if sex == 'M' else [14.0, 20.0, 28.0]
         lb, color, _ = _get_classification(smm, smm_bounds,
-            ["Baixo", "Saudável", "Excelente", "Atleta"], ["warning", "success", "primary", "info"])
-        cls["smm"] = {"value": smm, "unit": "kg", "name": "M. Esquelética", "label": lb, "color": color,
-            "bounds": smm_bounds, "desc": "Massa muscular esquelética (Janssen 2000, validada vs MRI).", "category": "muscular"}
+            ["Low", "Healthy", "Excellent", "Athlete"], ["warning", "success", "primary", "info"])
+        cls["smm"] = {"value": smm, "unit": "kg", "name": "Skeletal Muscle", "label": lb, "color": color,
+            "bounds": smm_bounds, "desc": "Skeletal muscle mass (Janssen 2000, validated vs MRI).", "category": "muscle"}
 
     # ── FFMI ──
     ffmi = metrics.get('ffmi', 0)
     ffmi_bounds = [17.0, 20.0, 25.0] if sex == 'M' else [14.0, 17.0, 21.0]
     lb, color, _ = _get_classification(ffmi, ffmi_bounds,
-        ["Baixo", "Saudável", "Forte", "Atleta"], ["warning", "success", "primary", "info"])
+        ["Low", "Healthy", "Strong", "Athlete"], ["warning", "success", "primary", "info"])
     cls["ffmi"] = {"value": ffmi, "unit": "", "name": "FFMI", "label": lb, "color": color,
-        "bounds": ffmi_bounds, "desc": "Índice de Massa Magra (FFM/H²). Indica potencial muscular natural.", "category": "muscular"}
+        "bounds": ffmi_bounds, "desc": "Fat-Free Mass Index (FFM/H²). Indicates natural muscular potential.", "category": "muscle"}
 
     # ── SMI ──
     smi = metrics.get('smi')
     if smi:
         smi_bounds = [7.0, 8.5, 10.5] if sex == 'M' else [5.7, 7.0, 8.5]
         lb, color, _ = _get_classification(smi, smi_bounds,
-            ["Sarcopenia", "Moderado", "Saudável", "Forte"], ["danger", "warning", "success", "primary"])
+            ["Sarcopenia", "Moderate", "Healthy", "Strong"], ["danger", "warning", "success", "primary"])
         cls["smi"] = {"value": smi, "unit": "kg/m²", "name": "SMI", "label": lb, "color": color,
-            "bounds": smi_bounds, "desc": "Índice Muscular Esquelético. Avalia risco de sarcopenia (EWGSOP2).", "category": "muscular"}
+            "bounds": smi_bounds, "desc": "Skeletal Muscle Index. Assesses sarcopenia risk (EWGSOP2).", "category": "muscle"}
 
     # ── Bone Mass ──
     bm = metrics.get('bone_mass_kg', 0)
     bm_bounds = [2.5, 3.2, 4.5] if sex == 'M' else [1.8, 2.5, 3.5]
     lb, color, _ = _get_classification(bm, bm_bounds,
-        ["Baixo", "Saudável", "Excelente", "Alto"], ["warning", "success", "primary", "info"])
-    cls["bone_mass"] = {"value": bm, "unit": "kg", "name": "Ossos", "label": lb, "color": color,
-        "bounds": bm_bounds, "desc": "Massa mineral óssea estimada. Importante para densidade óssea.", "category": "muscular"}
+        ["Low", "Healthy", "Excellent", "High"], ["warning", "success", "primary", "info"])
+    cls["bone_mass"] = {"value": bm, "unit": "kg", "name": "Bone Mass", "label": lb, "color": color,
+        "bounds": bm_bounds, "desc": "Estimated bone mineral mass. Important for bone density.", "category": "muscle"}
 
     # ── Protein ──
     pr = metrics.get('protein_percent', 0)
     pr_bounds = [16.0, 20.0, 24.0]
     lb, color, _ = _get_classification(pr, pr_bounds,
-        ["Baixo", "Saudável", "Excelente", "Alto"], ["warning", "success", "primary", "info"])
-    cls["protein"] = {"value": pr, "unit": "%", "name": "Proteína", "label": lb, "color": color,
-        "bounds": pr_bounds, "desc": "Proteína celular (~20% do tecido muscular).", "category": "muscular"}
+        ["Low", "Healthy", "Excellent", "High"], ["warning", "success", "primary", "info"])
+    cls["protein"] = {"value": pr, "unit": "%", "name": "Protein", "label": lb, "color": color,
+        "bounds": pr_bounds, "desc": "Cellular protein (~20% of muscle tissue).", "category": "muscle"}
 
     # ── BMR ──
     bmr = metrics.get('bmr', 0)
     bmr_bounds = [1200, 1500, 2000] if sex == 'F' else [1400, 1700, 2400]
     lb, color, _ = _get_classification(bmr, bmr_bounds,
-        ["Baixo", "Saudável", "Alto", "Super"], ["warning", "success", "primary", "info"])
-    cls["bmr"] = {"value": bmr, "unit": "kcal", "name": "Metabolismo", "label": lb, "color": color,
-        "bounds": bmr_bounds, "desc": "Calorias em repouso absoluto (Mifflin-St Jeor).", "category": "metabolismo"}
+        ["Low", "Healthy", "High", "Super"], ["warning", "success", "primary", "info"])
+    cls["bmr"] = {"value": bmr, "unit": "kcal", "name": "Metabolism", "label": lb, "color": color,
+        "bounds": bmr_bounds, "desc": "Calories at absolute rest (Mifflin-St Jeor).", "category": "metabolism"}
 
     # ── Metabolic Age ──
     ma = metrics.get('metabolic_age', 0)
     diff = age - ma
-    if diff <= -5: lb, color = "Envelhecido", "danger"
-    elif diff < 0: lb, color = "Acima", "warning"
-    elif diff <= 5: lb, color = "Saudável", "success"
-    else: lb, color = "Jovem", "primary"
-    cls["metabolic_age"] = {"value": ma, "unit": "anos", "name": "Idade Corporal", "label": lb, "color": color,
-        "bounds": [age-5, age, age+5], "desc": "Idade metabólica baseada no seu gasto calórico.", "category": "metabolismo"}
+    if diff <= -5: lb, color = "Aged", "danger"
+    elif diff < 0: lb, color = "Above", "warning"
+    elif diff <= 5: lb, color = "Healthy", "success"
+    else: lb, color = "Young", "primary"
+    cls["metabolic_age"] = {"value": ma, "unit": "years", "name": "Metabolic Age", "label": lb, "color": color,
+        "bounds": [age-5, age, age+5], "desc": "Metabolic age based on your caloric expenditure.", "category": "metabolism"}
 
     # ── Ideal Weight ──
     iw = metrics.get('ideal_weight_kg', 0)
     weight_diff = round(w - iw, 1)
     diff_label = f"+{weight_diff}" if weight_diff > 0 else str(weight_diff)
-    lb, color = ("Ideal", "success") if abs(weight_diff) < 3 else ("Perto", "primary") if abs(weight_diff) < 8 else ("Longe", "warning")
-    cls["ideal_weight"] = {"value": iw, "unit": "kg", "name": "Peso Ideal", "label": f"Δ {diff_label}kg", "color": color,
+    lb, color = ("Ideal", "success") if abs(weight_diff) < 3 else ("Close", "primary") if abs(weight_diff) < 8 else ("Far", "warning")
+    cls["ideal_weight"] = {"value": iw, "unit": "kg", "name": "Ideal Weight", "label": f"Δ {diff_label}kg", "color": color,
         "bounds": [round(iw-5,1), round(iw,1), round(iw+5,1)],
-        "desc": f"Centro da faixa saudável (BMI 22). Diferença: {diff_label} kg.", "category": "metabolismo"}
+        "desc": f"Center of healthy range (BMI 22). Difference: {diff_label} kg.", "category": "metabolism"}
 
     # ── Body Score ──
     bs = metrics.get('body_score', 0)
     bs_bounds = [40, 60, 80]
     lb, color, _ = _get_classification(bs, bs_bounds,
-        ["Baixo", "Regular", "Bom", "Excelente"], ["danger", "warning", "success", "primary"])
+        ["Low", "Fair", "Good", "Excellent"], ["danger", "warning", "success", "primary"])
     cls["body_score"] = {"value": bs, "unit": "/100", "name": "Body Score", "label": lb, "color": color,
-        "bounds": bs_bounds, "desc": "Nota composta: gordura, músculo, visceral, água e IMC.", "category": "score"}
+        "bounds": bs_bounds, "desc": "Composite score: fat, muscle, visceral, water and BMI.", "category": "score"}
 
     # ── WHR (Tier 2) ──
     whr_val = metrics.get('whr')
     if whr_val:
         whr_bounds = [0.85, 0.90, 1.0] if sex == 'M' else [0.75, 0.85, 0.95]
         lb, color, _ = _get_classification(whr_val, whr_bounds,
-            ["Excelente", "Saudável", "Alto", "Risco"], ["primary", "success", "warning", "danger"])
-        cls["whr"] = {"value": whr_val, "unit": "", "name": "Cintura/Quadril", "label": lb, "color": color,
-            "bounds": whr_bounds, "desc": "Relação cintura/quadril. Indicador de distribuição de gordura (OMS).", "category": "saude"}
+            ["Excellent", "Healthy", "High", "Risk"], ["primary", "success", "warning", "danger"])
+        cls["whr"] = {"value": whr_val, "unit": "", "name": "Waist/Hip", "label": lb, "color": color,
+            "bounds": whr_bounds, "desc": "Waist-to-hip ratio. Fat distribution indicator (WHO).", "category": "health"}
 
     # ── WHtR (Tier 2) ──
     whtr_val = metrics.get('whtr')
     if whtr_val:
         whtr_bounds = [0.40, 0.50, 0.60]
         lb, color, _ = _get_classification(whtr_val, whtr_bounds,
-            ["Magro", "Saudável", "Risco", "Alto Risco"], ["info", "success", "warning", "danger"])
-        cls["whtr"] = {"value": whtr_val, "unit": "", "name": "Cintura/Altura", "label": lb, "color": color,
-            "bounds": whtr_bounds, "desc": "Relação cintura/altura. < 0.5 = saudável (Ashwell 2012).", "category": "saude"}
+            ["Lean", "Healthy", "Risk", "High Risk"], ["info", "success", "warning", "danger"])
+        cls["whtr"] = {"value": whtr_val, "unit": "", "name": "Waist/Height", "label": lb, "color": color,
+            "bounds": whtr_bounds, "desc": "Waist-to-height ratio. < 0.5 = healthy (Ashwell 2012).", "category": "health"}
 
     return cls
 

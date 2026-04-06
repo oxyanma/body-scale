@@ -52,7 +52,7 @@ def create_ref_bar(value, bounds, zone_labels, zone_colors_list):
     Args:
         value: current metric value
         bounds: [b1, b2, b3] — 3 thresholds creating 4 zones
-        zone_labels: ["Baixo", "Normal", "Alto", "Obeso"]
+        zone_labels: ["Low", "Normal", "High", "Obese"]
         zone_colors_list: ["info", "success", "warning", "danger"]
     """
     if not bounds or len(bounds) < 2:

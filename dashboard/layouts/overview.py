@@ -129,14 +129,14 @@ def create_overview_layout(show_goal_stats=False):
                 html.Div([
                     html.Div("👤", style={"fontSize": "3rem", "textAlign": "center", "marginBottom": "8px"}),
                     html.P(t("overview.create_profile_cta"), style={"color": "var(--text-secondary)", "textAlign": "center"}),
-                    dcc.Link(t("overview.create_profile_btn"), href="/perfil",
+                    dcc.Link(t("overview.create_profile_btn"), href="/profile",
                              style={"display": "block", "textAlign": "center", "textDecoration": "none",
                                     "padding": "14px", "background": "linear-gradient(135deg, #6C5CE7, #4A90D9)",
                                     "color": "white", "borderRadius": "12px", "fontWeight": "600", "marginTop": "16px"})
                 ], className="health-card"),
             ])
 
-        name = user.name.split()[0] if user.name else "Usuário"
+        name = user.name.split()[0] if user.name else "User"
 
         last = db.query(Measurement).filter(Measurement.user_id == user.id).order_by(Measurement.measured_at.desc()).first()
         prev = db.query(Measurement).filter(Measurement.user_id == user.id).order_by(Measurement.measured_at.desc()).offset(1).first()
@@ -162,7 +162,7 @@ def create_overview_layout(show_goal_stats=False):
                 "boxShadow": "0 2px 8px rgba(74,144,217,0.3)",
                 "lineHeight": "1", "textDecoration": "none"
             }),
-            href="/perfil", style={"textDecoration": "none"}
+            href="/profile", style={"textDecoration": "none"}
         )
     ], className="dash-header")
 
@@ -221,7 +221,7 @@ def create_overview_layout(show_goal_stats=False):
                         ], className="bmi-labels"),
                     ], className="bmi-bar-container"),
                 ]),
-                href=f"/composicao?id={last.id}", style={"textDecoration": "none", "color": "inherit"}
+                href=f"/composition?id={last.id}", style={"textDecoration": "none", "color": "inherit"}
             ),
 
             # BLE controls inside the card
@@ -259,15 +259,15 @@ def create_overview_layout(show_goal_stats=False):
         dcc.Link(html.Div([
             html.Div(html.Img(src="/assets/icon_historico.png"), className="quick-action-icon"),
             html.Span(t("overview.quick_history"), className="quick-action-label")
-        ], className="quick-action"), href="/historico", style=link_style),
+        ], className="quick-action"), href="/history", style=link_style),
         dcc.Link(html.Div([
             html.Div(html.Img(src="/assets/icon_composicao.png"), className="quick-action-icon"),
             html.Span(t("overview.quick_composition"), className="quick-action-label")
-        ], className="quick-action"), href="/composicao", style=link_style),
+        ], className="quick-action"), href="/composition", style=link_style),
         dcc.Link(html.Div([
             html.Div(html.Img(src="/assets/icon_config.png"), className="quick-action-icon"),
             html.Span(t("overview.quick_settings"), className="quick-action-label")
-        ], className="quick-action"), href="/config", style=link_style),
+        ], className="quick-action"), href="/settings", style=link_style),
     ], className="quick-actions")
 
     # ── Goal Card ──
@@ -406,13 +406,13 @@ def home_poll_ble(n, already_saved):
     status = snap["status"]
 
     # BLE indicator (hide when idle - no floating dot)
-    if status == "Desconectado" or "Timeout" in (snap.get("scan_error") or ""):
+    if status == "Disconnected" or "Timeout" in (snap.get("scan_error") or ""):
         indicator = ""
-    elif "Escutando" in status or "Suba" in status or "Iniciando" in status:
+    elif "Listening" in status or "step on" in status.lower() or "Starting" in status:
         indicator = html.Span(className="ble-indicator ble-scanning")
-    elif "Conectado" in status:
+    elif "Connected" in status:
         indicator = html.Span(className="ble-indicator ble-connected")
-    elif status == "Finalizado":
+    elif status == "Done":
         indicator = html.Span(className="ble-indicator ble-done")
     else:
         indicator = html.Span(className="ble-indicator ble-idle")
@@ -422,15 +422,15 @@ def home_poll_ble(n, already_saved):
 
     m_text = ""
     m_style = {"textAlign": "center", "fontSize": "0.85rem", "marginTop": "8px", "padding": "8px", "borderRadius": "10px"}
-    if "Suba" in status or "Escutando" in status:
+    if "step on" in status.lower() or "Listening" in status:
         m_text = t("overview.step_on_scale")
         m_style.update({"color": "var(--blue)", "background": "var(--blue-light)"})
-    elif "Conectado" in status:
+    elif "Connected" in status:
         w = snap["weight"]
         weight_str = f"{w:.2f}"  # Live update!
         m_text = t("overview.measuring").format(weight=f"{w:.2f}")
         m_style.update({"color": "var(--green)", "background": "var(--green-light)"})
-    elif status == "Finalizado":
+    elif status == "Done":
         w = snap["weight"]
         weight_str = f"{w:.2f}"
         m_text = t("overview.measurement_complete").format(weight=f"{w:.2f}")
@@ -447,7 +447,7 @@ def home_poll_ble(n, already_saved):
     save_alert = no_update
     save_done = no_update
     if snap.get("metrics") and not already_saved:
-        if status == "Finalizado" or (status.startswith("Conectado") and snap.get("impedance") is not None):
+        if status == "Done" or (status.startswith("Connected") and snap.get("impedance") is not None):
             try:
                 db3 = SessionLocal()
                 try:

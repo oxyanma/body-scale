@@ -8,7 +8,7 @@ class AppState:
     """
     def __init__(self):
         self._lock = threading.Lock()
-        self.ble_status = "Desconectado"  # "Desconectado", "Procurando...", "Conectado"
+        self.ble_status = "Disconnected"  # "Disconnected", "Listening...", "Connected"
         self.live_weight = 0.0
         self.is_stable = False
         self.impedance = None
@@ -24,7 +24,7 @@ class AppState:
             self.scan_error = None
             self.metrics_calculated = None
             self.device_name = None
-            self.ble_status = "Desconectado"
+            self.ble_status = "Disconnected"
         
     def update_weight(self, weight, stable=False):
         with self._lock:

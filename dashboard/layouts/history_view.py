@@ -56,7 +56,7 @@ def create_history_view():
             html.Img(src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8'/%3E%3Cpolyline points='16 6 12 2 8 6'/%3E%3Cline x1='12' y1='2' x2='12' y2='15'/%3E%3C/svg%3E",
                      className="export-icon"),
             html.Div(className="export-spinner"),
-        ], className="btn-export", **{"data-filename": "historico"}),
+        ], className="btn-export", **{"data-filename": "history"}),
     ], className="page-header")
 
     if not measurements:
@@ -202,7 +202,7 @@ def create_history_view():
                     ], style={"display": "flex", "alignItems": "center"}),
                     html.Div(delta, className="record-delta", style={"color": delta_c}),
                 ], style={"display": "flex", "alignItems": "center", "gap": "10px", "flex": "1"}),
-                href=f"/composicao?id={m.id}", style={"textDecoration": "none", "color": "inherit", "flex": "1"}
+                href=f"/composition?id={m.id}", style={"textDecoration": "none", "color": "inherit", "flex": "1"}
             ),
             html.Button("🗑", className="record-action-btn",
                         id={"type": "delete-measurement-btn", "index": m.id}),
@@ -265,7 +265,7 @@ def update_compare_bar(values):
                 {"fontSize": "0.72rem", "opacity": "1", "fontWeight": "600"},
                 "#", hidden_link)
     elif len(checked_ids) == 2:
-        href = f"/comparacao?a={checked_ids[0]}&b={checked_ids[1]}"
+        href = f"/comparison?a={checked_ids[0]}&b={checked_ids[1]}"
         return (t("history.compare_2of2"),
                 {"fontSize": "0.72rem", "opacity": "1", "fontWeight": "600"},
                 href, visible_link)
@@ -310,4 +310,4 @@ def confirm_delete(n, measurement_id):
             db.commit()
     finally:
         db.close()
-    return "/historico"
+    return "/history"

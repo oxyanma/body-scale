@@ -11,26 +11,9 @@ from dashboard.layouts.profile_view import create_profile_view
 from dashboard.layouts.settings_view import create_settings_view
 from dashboard.layouts.composition_view import create_composition_view
 from dashboard.layouts.comparison_view import create_comparison_view
-from i18n import t, set_language, get_language, LANGUAGES
+from i18n import t
 
 logger = logging.getLogger(__name__)
-
-# Load language from active user on startup
-def _load_user_language():
-    try:
-        from database.db import SessionLocal
-        from database.models import User
-        db = SessionLocal()
-        try:
-            user = db.query(User).filter(User.is_active == True).first()
-            if user and hasattr(user, 'language') and user.language:
-                set_language(user.language)
-        finally:
-            db.close()
-    except Exception:
-        pass
-
-_load_user_language()
 
 # Layout base
 app.layout = create_layout()
@@ -44,24 +27,24 @@ def _render_page(pathname, search):
             params = parse_qs(search.lstrip("?"))
             show_goal_stats = "saved" in params
         return create_overview_layout(show_goal_stats=show_goal_stats)
-    elif pathname == "/composicao":
+    elif pathname == "/composition":
         measurement_id = None
         if search:
             params = parse_qs(search.lstrip("?"))
             measurement_id = params.get("id", [None])[0]
         return create_composition_view(measurement_id=measurement_id)
-    elif pathname == "/comparacao":
+    elif pathname == "/comparison":
         id_a, id_b = None, None
         if search:
             params = parse_qs(search.lstrip("?"))
             id_a = params.get("a", [None])[0]
             id_b = params.get("b", [None])[0]
         return create_comparison_view(id_a, id_b)
-    elif pathname == "/historico":
+    elif pathname == "/history":
         return create_history_view()
-    elif pathname == "/perfil":
+    elif pathname == "/profile":
         return create_profile_view()
-    elif pathname == "/config":
+    elif pathname == "/settings":
         return create_settings_view()
     else:
         return html.Div([
@@ -84,56 +67,6 @@ def _render_page(pathname, search):
 )
 def render_page_content(pathname, search):
     return _render_page(pathname, search)
-
-
-# Language switching callback
-@app.callback(
-    [Output("page-content", "children", allow_duplicate=True),
-     Output("lang-pt", "style"),
-     Output("lang-en", "style"),
-     Output("lang-es", "style"),
-     Output("lang-fr", "style")],
-    [Input("lang-pt", "n_clicks"),
-     Input("lang-en", "n_clicks"),
-     Input("lang-es", "n_clicks"),
-     Input("lang-fr", "n_clicks")],
-    [State("url", "pathname"),
-     State("url", "search")],
-    prevent_initial_call=True
-)
-def change_language(pt, en, es, fr, pathname, search):
-    triggered = ctx.triggered_id
-    if not triggered:
-        return [no_update] * 5
-
-    lang_map = {'lang-pt': 'pt', 'lang-en': 'en', 'lang-es': 'es', 'lang-fr': 'fr'}
-    lang = lang_map.get(triggered, 'pt')
-    set_language(lang)
-
-    # Save to database
-    try:
-        from database.db import SessionLocal
-        from database.models import User
-        db = SessionLocal()
-        try:
-            user = db.query(User).filter(User.is_active == True).first()
-            if user:
-                user.language = lang
-                db.commit()
-        finally:
-            db.close()
-    except Exception:
-        pass
-
-    # Update button styles
-    styles = []
-    for code in LANGUAGES:
-        if code == lang:
-            styles.append({"opacity": "1"})
-        else:
-            styles.append({})
-
-    return [_render_page(pathname, search)] + styles
 
 
 if __name__ == "__main__":

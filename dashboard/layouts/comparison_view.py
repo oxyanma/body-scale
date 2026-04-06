@@ -80,13 +80,13 @@ def create_comparison_view(id_a=None, id_b=None):
     if not id_a or not id_b:
         return html.Div([
             html.Div([
-                dcc.Link(html.Button("‹", className="back-btn"), href="/historico"),
+                dcc.Link(html.Button("‹", className="back-btn"), href="/history"),
                 html.H1(t("comparison.title")),
             ], className="page-header"),
             html.Div([
                 html.P(t("comparison.select_prompt"),
                        style={"textAlign": "center", "padding": "40px 0", "color": "var(--text-secondary)"}),
-                dcc.Link(t("comparison.back_history"), href="/historico",
+                dcc.Link(t("comparison.back_history"), href="/history",
                          style={"display": "block", "textAlign": "center", "color": "var(--blue)", "fontWeight": "600"})
             ], className="health-card")
         ])
@@ -100,7 +100,7 @@ def create_comparison_view(id_a=None, id_b=None):
         if not m_a or not m_b or not user:
             return html.Div([
                 html.Div([
-                    dcc.Link(html.Button("‹", className="back-btn"), href="/historico"),
+                    dcc.Link(html.Button("‹", className="back-btn"), href="/history"),
                     html.H1(t("comparison.title")),
                 ], className="page-header"),
                 html.Div(t("comparison.not_found"), className="health-card",
@@ -132,13 +132,13 @@ def create_comparison_view(id_a=None, id_b=None):
 
     # ── Header ──
     header = html.Div([
-        dcc.Link(html.Button("‹", className="back-btn"), href="/historico"),
+        dcc.Link(html.Button("‹", className="back-btn"), href="/history"),
         html.H1(t("comparison.title")),
         html.Button([
             html.Img(src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8'/%3E%3Cpolyline points='16 6 12 2 8 6'/%3E%3Cline x1='12' y1='2' x2='12' y2='15'/%3E%3C/svg%3E",
                      className="export-icon"),
             html.Div(className="export-spinner"),
-        ], className="btn-export", **{"data-filename": "comparacao"}),
+        ], className="btn-export", **{"data-filename": "comparison"}),
     ], className="page-header")
 
     # ── Time Badge ──
@@ -181,9 +181,9 @@ def create_comparison_view(id_a=None, id_b=None):
         ], style={"textAlign": "center", "flex": "1"})
 
     summary = html.Div([
-        _summary_card("⚖️", w_diff, "PESO (KG)", False),
-        _summary_card("📊", bmi_diff, "IMC", False),
-        _summary_card("⚡", bf_diff, "GORDURA\nCORPORAL %", False),
+        _summary_card("⚖️", w_diff, "WEIGHT (KG)", False),
+        _summary_card("📊", bmi_diff, "BMI", False),
+        _summary_card("⚡", bf_diff, "BODY\nFAT %", False),
     ], className="compare-summary")
 
     # ── Tabs ANTERIOR / ATUAL ──

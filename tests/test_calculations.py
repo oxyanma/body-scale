@@ -25,5 +25,5 @@ def test_all_metrics_with_impedance():
     
 def test_classifications():
     metrics = get_all_metrics(80, 175, 35, 'M', impedance=500)
-    classes = get_classifications(metrics, 'M', 35)
-    assert classes["bmi"]["label"] == "Sobrepeso"
+    classes = get_classifications(metrics, 'M', 35, 175)
+    assert classes["bmi"]["label"] == "Overweight"
