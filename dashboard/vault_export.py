@@ -28,8 +28,8 @@ related:
 
 > Auto-updated by [BioScale](http://127.0.0.1:8050) after each weighing.
 
-| Date | Weight | BMI | Fat% | Muscle% | Water% | Visceral | Protein% | BMR | Score |
-|------|--------|-----|------|---------|--------|----------|----------|-----|-------|
+| Date | Weight | BMI | Fat% | FatKg | SubcFat | Visceral | Muscle% | MuscleKg | SMM | LBM | FFMI | SMI | Water% | WaterKg | Bone | Protein% | BMR | TDEE | MetAge | Score | Ideal | Impedance |
+|------|--------|-----|------|-------|---------|----------|---------|----------|-----|-----|------|-----|--------|---------|------|----------|-----|------|--------|-------|-------|-----------|
 """
 
 
@@ -51,17 +51,37 @@ def export_to_vault(measurement):
         dt = measurement.measured_at or datetime.now()
         date_str = dt.strftime("%Y-%m-%d %H:%M")
 
+        # Fat mass kg from fat% * weight
+        fat_kg = _fmt(measurement.weight_kg * measurement.body_fat_percent / 100
+                       if measurement.body_fat_percent else None)
+        # Water mass kg
+        water_kg = _fmt(measurement.weight_kg * measurement.body_water_percent / 100
+                         if measurement.body_water_percent else None)
+
         row = (
             f"| {date_str} "
             f"| {measurement.weight_kg:.2f} "
             f"| {measurement.bmi:.1f} "
             f"| {_fmt(measurement.body_fat_percent)} "
-            f"| {_fmt(measurement.muscle_mass_percent)} "
-            f"| {_fmt(measurement.body_water_percent)} "
+            f"| {fat_kg} "
+            f"| {_fmt(measurement.subcutaneous_fat_kg)} "
             f"| {_fmt(measurement.visceral_fat)} "
+            f"| {_fmt(measurement.muscle_mass_percent)} "
+            f"| {_fmt(measurement.fat_free_mass_kg)} "
+            f"| {_fmt(measurement.smm_kg)} "
+            f"| {_fmt(measurement.lbm_kg)} "
+            f"| {_fmt(measurement.ffmi)} "
+            f"| {_fmt(measurement.smi)} "
+            f"| {_fmt(measurement.body_water_percent)} "
+            f"| {water_kg} "
+            f"| {_fmt(measurement.bone_mass_kg)} "
             f"| {_fmt(measurement.protein_percent)} "
             f"| {_fmti(measurement.bmr)} "
-            f"| {_fmti(measurement.body_score)} |\n"
+            f"| {_fmti(measurement.tdee)} "
+            f"| {_fmti(measurement.metabolic_age)} "
+            f"| {_fmti(measurement.body_score)} "
+            f"| {_fmt(measurement.ideal_weight_kg)} "
+            f"| {_fmti(measurement.impedance)} |\n"
         )
 
         with open(log_path, "a", encoding="utf-8") as f:
