@@ -482,6 +482,12 @@ def home_poll_ble(n, already_saved):
                             )
                             db3.add(m_obj)
                             db3.commit()
+                            # Export to vault markdown
+                            try:
+                                from dashboard.vault_export import export_to_vault
+                                export_to_vault(m_obj)
+                            except Exception as ve:
+                                print(f"Vault export error: {ve}")
                             save_alert = html.Div(t("overview.measurement_saved"), className="alert-health alert-success")
                             save_done = True
                             # Clear BLE state so redirect doesn't re-save
