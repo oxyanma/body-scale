@@ -57,22 +57,36 @@ def _delta_color(diff, higher_is_better):
     return "var(--green)" if improved else "var(--red)"
 
 
+# Keys displayed as integers (0 decimals)
+_INT_KEYS = ("metabolic_age", "body_score", "visceral_fat", "bmr", "tdee")
+
+
+def _round_for_display(v, key):
+    """Round value to its display precision."""
+    if v is None:
+        return None
+    if key in _INT_KEYS:
+        return round(v)
+    return round(v, 1)
+
+
 def _format_val(v, key):
     if v is None:
         return "--"
-    if isinstance(v, float):
-        if key in ("metabolic_age", "body_score", "visceral_fat"):
-            return f"{v:.0f}"
-        return f"{v:.1f}"
-    return str(v)
+    rounded = _round_for_display(v, key)
+    if rounded is None:
+        return "--"
+    if key in _INT_KEYS:
+        return str(int(rounded))
+    return f"{rounded:.1f}"
 
 
 def _format_diff(diff, key):
     if diff == 0:
         return "="
     sign = "+" if diff > 0 else ""
-    if key in ("metabolic_age", "body_score", "visceral_fat"):
-        return f"{sign}{diff:.0f}"
+    if key in _INT_KEYS:
+        return f"{sign}{int(diff)}"
     return f"{sign}{diff:.1f}"
 
 
@@ -227,7 +241,10 @@ def create_comparison_view(id_a=None, id_b=None):
             if va is None and vb is None:
                 continue
 
-            diff = round((va or 0) - (vb or 0), 2)
+            # Round to display precision before diffing — avoids "-0" artifacts
+            va_d = _round_for_display(va, key)
+            vb_d = _round_for_display(vb, key)
+            diff = (va_d or 0) - (vb_d or 0)
             dc = _delta_color(diff, higher_is_better)
 
             group_rows.append(html.Div([
