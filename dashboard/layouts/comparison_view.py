@@ -57,8 +57,8 @@ def _delta_color(diff, higher_is_better):
     return "var(--green)" if improved else "var(--red)"
 
 
-# Keys displayed as integers (0 decimals)
-_INT_KEYS = ("metabolic_age", "body_score", "visceral_fat", "bmr", "tdee")
+# Keys displayed as integers (naturally whole numbers)
+_INT_KEYS = ("metabolic_age", "body_score", "bmr", "tdee")
 
 
 def _round_for_display(v, key):
