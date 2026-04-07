@@ -485,7 +485,7 @@ def home_poll_ble(n, already_saved):
                             # Export to vault markdown
                             try:
                                 from dashboard.vault_export import export_to_vault
-                                export_to_vault(m_obj)
+                                export_to_vault(m_obj, metrics=md)
                             except Exception as ve:
                                 print(f"Vault export error: {ve}")
                             save_alert = html.Div(t("overview.measurement_saved"), className="alert-health alert-success")

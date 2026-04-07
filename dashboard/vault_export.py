@@ -28,16 +28,17 @@ related:
 
 > Auto-updated by [BioScale](http://127.0.0.1:8050) after each weighing.
 
-| Date | Weight | BMI | Fat% | FatKg | SubcFat | Visceral | Muscle% | MuscleKg | SMM | LBM | FFMI | SMI | Water% | WaterKg | Bone | Protein% | BMR | TDEE | MetAge | Score | Ideal | Impedance |
-|------|--------|-----|------|-------|---------|----------|---------|----------|-----|-----|------|-----|--------|---------|------|----------|-----|------|--------|-------|-------|-----------|
+| Date | Weight | BMI | Fat% | FatKg | SubcFat | Visceral | Muscle% | MuscleKg | SMM | LBM | FFMI | SMI | Water% | WaterKg | Bone | Protein% | ProteinKg | BMR | TDEE | MetAge | Score | Ideal | BodyType | LArmMus | RArmMus | LLegMus | RLegMus | LArmFat | RArmFat | LLegFat | RLegFat | Impedance |
+|------|--------|-----|------|-------|---------|----------|---------|----------|-----|-----|------|-----|--------|---------|------|----------|-----------|-----|------|--------|-------|-------|----------|---------|---------|---------|---------|---------|---------|---------|---------|-----------|
 """
 
 
-def export_to_vault(measurement):
+def export_to_vault(measurement, metrics=None):
     """Append a measurement row to the vault weight log markdown table.
 
     Args:
         measurement: a Measurement ORM object (already committed to DB).
+        metrics: optional dict from get_all_metrics() for derived fields not in DB.
     """
     try:
         log_path = VAULT_LOG_PATH
@@ -51,18 +52,31 @@ def export_to_vault(measurement):
         dt = measurement.measured_at or datetime.now()
         date_str = dt.strftime("%Y-%m-%d %H:%M")
 
-        # Fat mass kg from fat% * weight
-        fat_kg = _fmt(measurement.weight_kg * measurement.body_fat_percent / 100
-                       if measurement.body_fat_percent else None)
-        # Water mass kg
+        md = metrics or {}
+
+        # Values from ORM (always available)
+        fat_pct = measurement.body_fat_percent
+        fat_kg = _fmt(measurement.weight_kg * fat_pct / 100 if fat_pct else None)
         water_kg = _fmt(measurement.weight_kg * measurement.body_water_percent / 100
-                         if measurement.body_water_percent else None)
+                        if measurement.body_water_percent else None)
+
+        # Metrics dict provides derived fields not stored in DB
+        protein_kg  = _fmt(md.get("protein_mass_kg"))
+        body_type   = md.get("body_type") or "--"
+        la_mus      = _fmt(md.get("left_arm_muscle_kg"))
+        ra_mus      = _fmt(md.get("right_arm_muscle_kg"))
+        ll_mus      = _fmt(md.get("left_leg_muscle_kg"))
+        rl_mus      = _fmt(md.get("right_leg_muscle_kg"))
+        la_fat      = _fmt(md.get("left_arm_fat_kg"))
+        ra_fat      = _fmt(md.get("right_arm_fat_kg"))
+        ll_fat      = _fmt(md.get("left_leg_fat_kg"))
+        rl_fat      = _fmt(md.get("right_leg_fat_kg"))
 
         row = (
             f"| {date_str} "
             f"| {measurement.weight_kg:.2f} "
             f"| {measurement.bmi:.1f} "
-            f"| {_fmt(measurement.body_fat_percent)} "
+            f"| {_fmt(fat_pct)} "
             f"| {fat_kg} "
             f"| {_fmt(measurement.subcutaneous_fat_kg)} "
             f"| {_fmt(measurement.visceral_fat)} "
@@ -76,11 +90,21 @@ def export_to_vault(measurement):
             f"| {water_kg} "
             f"| {_fmt(measurement.bone_mass_kg)} "
             f"| {_fmt(measurement.protein_percent)} "
+            f"| {protein_kg} "
             f"| {_fmti(measurement.bmr)} "
             f"| {_fmti(measurement.tdee)} "
             f"| {_fmti(measurement.metabolic_age)} "
             f"| {_fmti(measurement.body_score)} "
             f"| {_fmt(measurement.ideal_weight_kg)} "
+            f"| {body_type} "
+            f"| {la_mus} "
+            f"| {ra_mus} "
+            f"| {ll_mus} "
+            f"| {rl_mus} "
+            f"| {la_fat} "
+            f"| {ra_fat} "
+            f"| {ll_fat} "
+            f"| {rl_fat} "
             f"| {_fmti(measurement.impedance)} |\n"
         )
 

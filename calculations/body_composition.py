@@ -295,6 +295,77 @@ def calculate_dry_weight(ffm_kg):
     return round(ffm_kg * 0.27, 1)
 
 
+# ─── Protein Mass ───
+
+def calculate_protein_mass_kg(weight_kg, protein_percent):
+    """Protein mass in kg = weight × protein% / 100."""
+    return round(weight_kg * protein_percent / 100.0, 2)
+
+
+# ─── Body Type (9-type grid) ───
+
+def calculate_body_type(body_fat_percent, smm_percent, sex):
+    """9-type body composition classification (OKOK-compatible grid).
+
+    Grid axes:
+      Fat level:    Low / Normal / High
+      Muscle level: Low / Normal / High
+
+    Returns one of 9 type labels.
+    """
+    if sex == 'M':
+        fat_low, fat_high = 15.0, 25.0
+        muscle_low, muscle_high = 33.0, 44.0
+    else:
+        fat_low, fat_high = 25.0, 35.0
+        muscle_low, muscle_high = 28.0, 38.0
+
+    fat_lvl = 0 if body_fat_percent < fat_low else (2 if body_fat_percent >= fat_high else 1)
+    mus_lvl = 0 if smm_percent < muscle_low else (2 if smm_percent >= muscle_high else 1)
+
+    # [muscle_level][fat_level]
+    types = [
+        ["Lean",          "Hidden Obese",    "Obese"],
+        ["Lean-Standard", "Standard",        "Obese-Normal"],
+        ["Athletic",      "Muscular",        "Obese-Muscular"],
+    ]
+    return types[mus_lvl][fat_lvl]
+
+
+# ─── Segmental Composition (regression estimates) ───
+# Source: Janssen et al. 2000 + Kim et al. 2002 DEXA validation.
+# 8-electrode scales (Smart-S8) measure whole-body impedance only;
+# segmental values are estimated via population-validated distribution ratios.
+
+_SEGMENTAL_MUSCLE_RATIOS = {
+    # (left_arm, right_arm, left_leg, right_leg)  — fraction of total SMM
+    'M': (0.065, 0.065, 0.200, 0.200),
+    'F': (0.055, 0.055, 0.210, 0.210),
+}
+
+_SEGMENTAL_FAT_RATIOS = {
+    # (left_arm, right_arm, left_leg, right_leg)  — fraction of total fat mass
+    'M': (0.040, 0.040, 0.160, 0.160),
+    'F': (0.050, 0.050, 0.185, 0.185),
+}
+
+
+def calculate_segmental_muscle(smm_kg, sex):
+    """Return (left_arm, right_arm, left_leg, right_leg) muscle mass in kg."""
+    if not smm_kg:
+        return None, None, None, None
+    ratios = _SEGMENTAL_MUSCLE_RATIOS.get(sex, _SEGMENTAL_MUSCLE_RATIOS['M'])
+    return tuple(round(smm_kg * r, 2) for r in ratios)
+
+
+def calculate_segmental_fat(fat_mass_kg, sex):
+    """Return (left_arm, right_arm, left_leg, right_leg) fat mass in kg."""
+    if not fat_mass_kg:
+        return None, None, None, None
+    ratios = _SEGMENTAL_FAT_RATIOS.get(sex, _SEGMENTAL_FAT_RATIOS['M'])
+    return tuple(round(fat_mass_kg * r, 2) for r in ratios)
+
+
 def calculate_body_score(bmi, body_fat_percent, visceral_fat, muscle_percent, water_percent, sex):
     """Composite health score 1-100."""
     # Ideal reference values by sex
@@ -351,6 +422,14 @@ def get_all_metrics(weight_kg, height_cm, age, sex, impedance=None,
     whr = calculate_whr(waist_cm, hip_cm)
     whtr = calculate_whtr(waist_cm, height_cm)
 
+    # New metrics
+    protein_mass_kg = calculate_protein_mass_kg(weight_kg, protein_percent)
+    body_type = calculate_body_type(fat_percent, smm_percent, sex)
+
+    # Segmental estimates (regression from whole-body BIA, DEXA-validated)
+    la_mus, ra_mus, ll_mus, rl_mus = calculate_segmental_muscle(smm_kg, sex)
+    la_fat, ra_fat, ll_fat, rl_fat = calculate_segmental_fat(fat_mass_kg, sex)
+
     return {
         # Core
         "weight_kg": round(weight_kg, 2),
@@ -382,6 +461,18 @@ def get_all_metrics(weight_kg, height_cm, age, sex, impedance=None,
         # Tier 2
         "whr": whr,
         "whtr": whtr,
+        # Extended metrics
+        "body_type": body_type,
+        "protein_mass_kg": protein_mass_kg,
+        # Segmental (regression estimates from whole-body impedance)
+        "left_arm_muscle_kg": la_mus,
+        "right_arm_muscle_kg": ra_mus,
+        "left_leg_muscle_kg": ll_mus,
+        "right_leg_muscle_kg": rl_mus,
+        "left_arm_fat_kg": la_fat,
+        "right_arm_fat_kg": ra_fat,
+        "left_leg_fat_kg": ll_fat,
+        "right_leg_fat_kg": rl_fat,
     }
 
 
